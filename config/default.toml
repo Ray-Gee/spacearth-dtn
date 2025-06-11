@@ -1,0 +1,12 @@
+[bundle]
+version = 7
+lifetime = 3600
+
+[endpoints]
+destination = "dtn://dest"
+source = "dtn://src"
+report_to = "dtn://report"
+
+[storage]
+path = "bundles"
+max_size = 1024  # MB 

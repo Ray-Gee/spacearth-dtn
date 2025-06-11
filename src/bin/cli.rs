@@ -26,9 +26,9 @@ fn main() -> anyhow::Result<()> {
             let bundle = Bundle {
                 primary: PrimaryBlock {
                     version: config.bundle.version,
-                    destination: config.endpoints.destination.into(),
-                    source: config.endpoints.source.into(),
-                    report_to: config.endpoints.report_to.into(),
+                    destination: config.endpoints.destination,
+                    source: config.endpoints.source,
+                    report_to: config.endpoints.report_to,
                     creation_timestamp: generate_creation_timestamp(),
                     lifetime: config.bundle.lifetime,
                 },

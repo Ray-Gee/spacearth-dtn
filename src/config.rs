@@ -47,3 +47,20 @@ pub fn generate_creation_timestamp() -> u64 {
         .unwrap_or_default()
         .as_secs()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_creation_timestamp() {
+        let ts = generate_creation_timestamp();
+        assert!(ts > 0);
+    }
+
+    #[test]
+    fn test_config_load() {
+        let result = Config::load();
+        assert!(result.is_ok());
+    }
+}

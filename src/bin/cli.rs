@@ -43,3 +43,18 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn test_opts_parse_insert() {
+        let args = vec!["test-bin", "insert", "--message", "hello"];
+        let opts = Opts::parse_from(args);
+        match opts.cmd {
+            Command::Insert { message } => assert_eq!(message, "hello"),
+        }
+    }
+}

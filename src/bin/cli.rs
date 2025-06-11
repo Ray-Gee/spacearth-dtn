@@ -22,25 +22,29 @@ fn main() -> anyhow::Result<()> {
 
     match opts.cmd {
         Command::Insert { message } => {
-            let config = Config::load()?;
-            let bundle = Bundle {
-                primary: PrimaryBlock {
-                    version: config.bundle.version,
-                    destination: config.endpoints.destination,
-                    source: config.endpoints.source,
-                    report_to: config.endpoints.report_to,
-                    creation_timestamp: generate_creation_timestamp(),
-                    lifetime: config.bundle.lifetime,
-                },
-                payload: message.into_bytes(),
-            };
-
-            let encoded = serde_cbor::to_vec(&bundle)?;
-            std::fs::write("bundle.cbor", encoded)?;
-            println!("Bundle saved to bundle.cbor");
+            handle_insert(message)?;
         }
     }
 
+    Ok(())
+}
+
+fn handle_insert(message: String) -> anyhow::Result<()> {
+    let config = Config::load()?;
+    let bundle = Bundle {
+        primary: PrimaryBlock {
+            version: config.bundle.version,
+            destination: config.endpoints.destination,
+            source: config.endpoints.source,
+            report_to: config.endpoints.report_to,
+            creation_timestamp: generate_creation_timestamp(),
+            lifetime: config.bundle.lifetime,
+        },
+        payload: message.into_bytes(),
+    };
+    let encoded = serde_cbor::to_vec(&bundle)?;
+    std::fs::write("bundle.cbor", encoded)?;
+    println!("Bundle saved to bundle.cbor");
     Ok(())
 }
 
@@ -56,5 +60,11 @@ mod tests {
         match opts.cmd {
             Command::Insert { message } => assert_eq!(message, "hello"),
         }
+    }
+
+    #[test]
+    fn test_handle_insert() {
+        let result = handle_insert("test message".to_string());
+        assert!(result.is_ok());
     }
 }

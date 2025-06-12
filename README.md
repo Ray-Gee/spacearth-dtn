@@ -10,6 +10,11 @@ suitable for both space and terrestrial disruption-tolerant networks.
 
 > "From space to earth. For the disconnected."
 
+## Contact
+
+For questions, suggestions, or contributions, please contact:
+- Email: [hsatlefp@gmail.com](mailto:hsatlefp@gmail.com)
+
 ---
 
 ## Features
@@ -115,6 +120,11 @@ All code is manually reviewed and tested before use.
 
 **spacearth-dtn** は、Rustで書かれた遅延耐性ネットワーク（DTN）の実装です。  
 宇宙から地上、また地上内の通信断環境でも機能する、**レジリエントな通信技術**を目指しています。
+
+### 連絡先
+
+質問、提案、貢献については以下までご連絡ください：
+- メール: [hsatlefp@gmail.com](mailto:hsatlefp@gmail.com)
 
 ### 開発ロードマップ
 

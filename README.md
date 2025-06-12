@@ -37,6 +37,9 @@ cargo run --bin cli -- list
 
 # Show bundle details (using partial ID)
 cargo run --bin cli -- show --id <partial_id>
+
+# Dispatch all bundles to the destination
+cargo run --bin cli -- dispatch
 ```
 
 Configuration is managed in `config/default.toml` and can be overridden with environment variables:
@@ -66,6 +69,7 @@ Current development phase and future plans:
    - BundleStore implementation
    - Partial ID lookup support
    - Automatic test cleanup
+   - Bundle dispatch functionality
 
 3. 🔜 **Forwarding Control** (Next)
    - Relay node routing
@@ -124,6 +128,7 @@ All code is manually reviewed and tested before use.
    - BundleStore実装
    - 部分ID検索機能
    - テストの自動クリーンアップ
+   - バンドルの送信機能
 
 3. 🔜 **転送制御 (forwarding)** (次期)
    - 中継ノードでのルーティング

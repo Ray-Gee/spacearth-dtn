@@ -1,7 +1,10 @@
 use crate::bundle::Bundle;
 use anyhow::Result;
 use sha2::{Digest, Sha256};
-use std::{fs, path::{Path, PathBuf}};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 pub struct BundleStore {
     dir: PathBuf,

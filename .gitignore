@@ -3,3 +3,4 @@
 *.cbor
 .DS_Store
 **/.DS_Store
+bundles/

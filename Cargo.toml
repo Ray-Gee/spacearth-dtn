@@ -11,4 +11,7 @@ clap = { version = "4.0", features = ["derive"] }
 log = "0.4"
 env_logger = "0.10"
 config = "0.15.11"
+sha2 = "0.10"
 
+[dev-dependencies]
+tempfile = "3.20.0"

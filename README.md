@@ -31,6 +31,12 @@ A command-line tool for creating and managing Bundle Protocol bundles is availab
 ```bash
 # Create a bundle
 cargo run --bin cli -- insert --message "Hello, DTN!"
+
+# List all bundles
+cargo run --bin cli -- list
+
+# Show bundle details (using partial ID)
+cargo run --bin cli -- show --id <partial_id>
 ```
 
 Configuration is managed in `config/default.toml` and can be overridden with environment variables:
@@ -50,17 +56,18 @@ export DTN_ENDPOINTS_DESTINATION="dtn://new-dest"
 
 Current development phase and future plans:
 
-1. ✅ **Bundle Structure & CBOR Support** (Current)
+1. ✅ **Bundle Structure & CBOR Support** (Completed)
    - Bundle structure definition
    - CBOR serialization/deserialization
    - Basic CLI operations
 
-2. 🔜 **Bundle Storage/Load** (Next)
-   - File/DB persistence
-   - Expiration management
+2. ✅ **Bundle Storage/Load** (Completed)
+   - File-based persistence
    - BundleStore implementation
+   - Partial ID lookup support
+   - Automatic test cleanup
 
-3. 🚧 **Forwarding Control**
+3. 🔜 **Forwarding Control** (Next)
    - Relay node routing
    - Routing rules implementation
 
@@ -107,17 +114,18 @@ All code is manually reviewed and tested before use.
 
 ### 開発ロードマップ
 
-1. ✅ **Bundle構造・CBOR対応** (現在)
+1. ✅ **Bundle構造・CBOR対応** (完了)
    - Bundle構造体の定義
    - CBORシリアライズ/デシリアライズ
    - 基本的なCLI操作
 
-2. 🔜 **Bundleの保存/ロード** (次期)
-   - ファイル/DBへの永続化
-   - 有効期限管理
+2. ✅ **Bundleの保存/ロード** (完了)
+   - ファイルベースの永続化
    - BundleStore実装
+   - 部分ID検索機能
+   - テストの自動クリーンアップ
 
-3. 🚧 **転送制御 (forwarding)**
+3. 🔜 **転送制御 (forwarding)** (次期)
    - 中継ノードでのルーティング
    - ルーティングルール実装
 

@@ -17,5 +17,5 @@ sha2 = "0.10"
 tempfile = "3.20.0"
 
 [[bin]]
-name = "spacearth-dtn"
+name = "sdtn"
 path = "src/bin/cli.rs"

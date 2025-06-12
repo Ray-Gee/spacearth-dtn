@@ -38,16 +38,16 @@ A command-line tool for creating and managing Bundle Protocol bundles is availab
 cargo build --release
 
 # Create a bundle
-spacearth-dtn insert --message "Hello, DTN!"
+sdtn insert --message "Hello, DTN!"
 
 # List all bundles
-spacearth-dtn list
+sdtn list
 
 # Show bundle details (using partial ID)
-spacearth-dtn show --id <partial_id>
+sdtn show --id <partial_id>
 
 # Dispatch all bundles to the destination
-spacearth-dtn dispatch
+sdtn dispatch
 ```
 
 Configuration is managed in `config/default.toml` and can be overridden with environment variables:

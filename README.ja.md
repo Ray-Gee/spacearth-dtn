@@ -35,16 +35,16 @@ Bundle Protocolのバンドルを作成・管理するためのコマンドラ�
 cargo build --release
 
 # バンドルの作成
-spacearth-dtn insert --message "Hello, DTN!"
+sdtn insert --message "Hello, DTN!"
 
 # すべてのバンドルを表示
-spacearth-dtn list
+sdtn list
 
 # バンドルの詳細表示（部分IDを使用）
-spacearth-dtn show --id <partial_id>
+sdtn show --id <partial_id>
 
 # すべてのバンドルを宛先に送信
-spacearth-dtn dispatch
+sdtn dispatch
 ```
 
 設定は`config/default.toml`で管理され、環境変数で上書き可能です：

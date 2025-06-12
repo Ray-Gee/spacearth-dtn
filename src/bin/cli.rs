@@ -22,6 +22,19 @@ enum Command {
         id: String,
     },
     Dispatch,
+    Receive,
+    Daemon {
+        #[clap(subcommand)]
+        cmd: DaemonCmd,
+    },
+}
+
+#[derive(Parser)]
+enum DaemonCmd {
+    Receive {
+        #[clap(long, default_value_t = 5)]
+        interval: u64,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -53,6 +66,14 @@ fn main() -> anyhow::Result<()> {
         Command::Dispatch => {
             let dispatched_dir = PathBuf::from("./dispatched");
             store.dispatch_all(&dispatched_dir)?;
+        }
+
+        Command::Receive => {
+            todo!();
+        }
+
+        Command::Daemon { cmd: _ } => {
+            todo!();
         }
     }
 

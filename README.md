@@ -34,17 +34,20 @@ For questions, suggestions, or contributions, please contact:
 A command-line tool for creating and managing Bundle Protocol bundles is available:
 
 ```bash
+# Build the project
+cargo build --release
+
 # Create a bundle
-cargo run --bin cli -- insert --message "Hello, DTN!"
+spacearth-dtn insert --message "Hello, DTN!"
 
 # List all bundles
-cargo run --bin cli -- list
+spacearth-dtn list
 
 # Show bundle details (using partial ID)
-cargo run --bin cli -- show --id <partial_id>
+spacearth-dtn show --id <partial_id>
 
 # Dispatch all bundles to the destination
-cargo run --bin cli -- dispatch
+spacearth-dtn dispatch
 ```
 
 Configuration is managed in `config/default.toml` and can be overridden with environment variables:

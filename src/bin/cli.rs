@@ -2,6 +2,7 @@ use clap::Parser;
 use spacearth_dtn::bundle::*;
 use spacearth_dtn::config::{Config, generate_creation_timestamp};
 use spacearth_dtn::store::BundleStore;
+use std::path::PathBuf;
 
 #[derive(Parser)]
 struct Opts {
@@ -20,6 +21,7 @@ enum Command {
         #[clap(short, long)]
         id: String,
     },
+    Dispatch,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -46,6 +48,11 @@ fn main() -> anyhow::Result<()> {
             println!("  Source: {}", bundle.primary.source);
             println!("  Destination: {}", bundle.primary.destination);
             println!("  Message: {}", String::from_utf8_lossy(&bundle.payload));
+        }
+
+        Command::Dispatch => {
+            let dispatched_dir = PathBuf::from("./dispatched");
+            store.dispatch_all(&dispatched_dir)?;
         }
     }
 
@@ -117,6 +124,42 @@ mod tests {
 
         let loaded = store.load_by_partial_id(id_partial)?;
         assert_eq!(loaded.payload, b"test");
+        Ok(())
+    }
+
+    #[test]
+    fn test_dispatch() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new()?;
+        let store = BundleStore::new(temp_dir.path())?;
+
+        let bundle = Bundle {
+            primary: PrimaryBlock {
+                version: 7,
+                destination: "dtn://dest".into(),
+                source: "dtn://src".into(),
+                report_to: "dtn://report".into(),
+                creation_timestamp: 12345,
+                lifetime: 3600,
+            },
+            payload: b"dispatch test".to_vec(),
+        };
+        store.insert(&bundle)?;
+
+        let bundles_before = store.list()?;
+        assert_eq!(bundles_before.len(), 1);
+
+        let dispatched_dir = temp_dir.path().join("dispatched");
+        store.dispatch_all(&dispatched_dir)?;
+
+        let bundles_after = store.list()?;
+        assert_eq!(bundles_after.len(), 0);
+
+        let dispatched_files: Vec<_> = std::fs::read_dir(&dispatched_dir)?
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("cbor"))
+            .collect();
+        assert_eq!(dispatched_files.len(), 1);
+
         Ok(())
     }
 }

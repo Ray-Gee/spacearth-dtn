@@ -1,7 +1,7 @@
 use crate::bundle::Bundle;
 use anyhow::Result;
 use sha2::{Digest, Sha256};
-use std::{fs, path::PathBuf};
+use std::{fs, path::{Path, PathBuf}};
 
 pub struct BundleStore {
     dir: PathBuf,
@@ -82,7 +82,6 @@ impl BundleStore {
             // ⚠️ Actual transmission is still a dummy (only logging for now)
             println!("  To: {}", bundle.primary.destination);
 
-            // 移動する
             let from = self.dir.join(format!("{id}.cbor"));
             let to = dispatched_dir.join(format!("{id}.cbor"));
             fs::rename(from, to)?;

@@ -80,7 +80,18 @@ fn main() -> anyhow::Result<()> {
 
         Command::Daemon { cmd } => match cmd {
             DaemonCmd::Listener { addr } => {
-                let cla = Arc::new(spacearth_dtn::cla::TcpClaListener { bind_addr: addr });
+                let cla = Arc::new(spacearth_dtn::cla::TcpClaListener {
+                    bind_addr: addr,
+                    receive_callback: Arc::new(|bundle| {
+                        if let Err(e) = (|| -> anyhow::Result<()> {
+                            let store = BundleStore::new("./bundles")?;
+                            store.insert(&bundle)?;
+                            Ok(())
+                        })() {
+                            eprintln!("❌ Failed to insert bundle: {e}");
+                        }
+                    }),
+                });
                 let manager = ClaManager::new(|bundle| {
                     println!("📥 Received: {:?}", bundle);
                 });
@@ -172,7 +183,11 @@ mod tests {
         };
         store.insert(&bundle)?;
 
-        let id_full = store.list()?.first().unwrap().clone();
+        let id_full = store
+            .list()?
+            .first()
+            .expect("expected at least one bundle")
+            .clone();
         let id_partial = &id_full[..8];
 
         let loaded = store.load_by_partial_id(id_partial)?;

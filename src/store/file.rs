@@ -91,4 +91,15 @@ impl BundleStore {
         }
         Ok(())
     }
+
+    pub fn dispatch_one(&self, bundle: &Bundle, dispatched_dir: &Path) -> Result<()> {
+        let src = self.filename_for(bundle);
+        let dst = dispatched_dir.join(
+            src.file_name()
+                .ok_or_else(|| anyhow::anyhow!("Invalid filename"))?,
+        );
+        fs::create_dir_all(dispatched_dir)?;
+        fs::rename(src, dst)?;
+        Ok(())
+    }
 }

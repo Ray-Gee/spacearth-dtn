@@ -48,6 +48,12 @@ sdtn show --id <partial_id>
 
 # Dispatch all bundles to the destination
 sdtn dispatch
+
+# Start daemon listener (receiver)
+sdtn daemon listener --addr 127.0.0.1:3000
+
+# Start daemon dialer (sender)
+sdtn daemon dialer --addr 127.0.0.1:3000
 ```
 
 Configuration is managed in `config/default.toml` and can be overridden with environment variables:
@@ -79,28 +85,32 @@ Current development phase and future plans:
    - Automatic test cleanup
    - Bundle dispatch functionality
 
-3. 🔜 **Forwarding Control** (Next)
+3. ✅ **CLA (Convergence Layer Adapter)** (Completed)
+   - TCP communication
+   - Basic daemon listener/dialer functionality
+
+4. 🔜 **Bundle Transmission & Reception** (Next)
+   - Bundle sending via CLA
+   - Bundle receiving and processing
+   - Integration with BundleStore
+
+5. 🚧 **Forwarding Control**
    - Relay node routing
    - Routing rules implementation
 
-4. 🚧 **CLA (Convergence Layer Adapter)**
-   - TCP/UDP communication
-   - LoRa/BLE support
-   - HTTP/HTTPS support
-
-5. 🚧 **Software Bus**
+6. 🚧 **Software Bus**
    - Inter-process communication
    - Message queue
 
-6. 🚧 **Event Loop / Task Management**
+7. 🚧 **Event Loop / Task Management**
    - Async processing
    - Task scheduling
 
-7. ⬛ **Management CLI / WebUI** (Optional)
+8. ⬛ **Management CLI / WebUI** (Optional)
    - Advanced management features
    - Visualization tools
 
-8. ⬛ **RFC Compliance** (Optional)
+9. ⬛ **RFC Compliance** (Optional)
    - RFC 9171 compliance tests
    - Interoperability tests
 

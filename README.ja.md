@@ -45,6 +45,12 @@ sdtn show --id <partial_id>
 
 # すべてのバンドルを宛先に送信
 sdtn dispatch
+
+# デーモンリスナー（受信側）を開始
+sdtn daemon listener --addr 127.0.0.1:3000
+
+# デーモンダイアラー（送信側）を開始
+sdtn daemon dialer --addr 127.0.0.1:3000
 ```
 
 設定は`config/default.toml`で管理され、環境変数で上書き可能です：
@@ -76,28 +82,32 @@ export DTN_ENDPOINTS_DESTINATION="dtn://new-dest"
    - テストの自動クリーンアップ
    - バンドルの送信機能
 
-3. 🔜 **転送制御 (forwarding)** (次期)
+3. ✅ **CLA (Convergence Layer Adapter)** (完了)
+   - TCP通信
+   - 基本的なデーモンリスナー/ダイアラー機能
+
+4. 🔜 **バンドル送受信** (次期)
+   - CLAを使用したバンドル送信
+   - バンドル受信と処理
+   - BundleStoreとの統合
+
+5. 🚧 **転送制御**
    - 中継ノードでのルーティング
    - ルーティングルール実装
 
-4. 🚧 **CLA (Convergence Layer Adapter)**
-   - TCP/UDP通信
-   - LoRa/BLE対応
-   - HTTP/HTTPS対応
-
-5. 🚧 **ソフトウェアバス**
+6. 🚧 **ソフトウェアバス**
    - プロセス間通信
    - メッセージキュー
 
-6. 🚧 **イベントループ / タスク管理**
+7. 🚧 **イベントループ / タスク管理**
    - 非同期処理
    - タスクスケジューリング
 
-7. ⬛ **管理CLI / WebUI** (オプション)
+8. ⬛ **管理CLI / WebUI** (オプション)
    - 詳細な管理機能
    - 可視化ツール
 
-8. ⬛ **RFC準拠検証** (オプション)
+9. ⬛ **RFC準拠検証** (オプション)
    - RFC 9171準拠テスト
    - 相互運用性テスト
 

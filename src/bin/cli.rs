@@ -1,8 +1,10 @@
 use clap::Parser;
 use spacearth_dtn::bundle::*;
-use spacearth_dtn::config::{Config, generate_creation_timestamp};
+use spacearth_dtn::cla::manager::ClaManager;
+use spacearth_dtn::config::{generate_creation_timestamp, Config};
 use spacearth_dtn::store::BundleStore;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Parser)]
 struct Opts {
@@ -31,9 +33,13 @@ enum Command {
 
 #[derive(Parser)]
 enum DaemonCmd {
-    Receive {
-        #[clap(long, default_value_t = 5)]
-        interval: u64,
+    Listener {
+        #[clap(long)]
+        addr: String,
+    },
+    Dialer {
+        #[clap(long)]
+        addr: String,
     },
 }
 
@@ -72,9 +78,35 @@ fn main() -> anyhow::Result<()> {
             todo!();
         }
 
-        Command::Daemon { cmd: _ } => {
-            todo!();
-        }
+        Command::Daemon { cmd } => match cmd {
+            DaemonCmd::Listener { addr } => {
+                let cla = Arc::new(spacearth_dtn::cla::TcpClaListener { bind_addr: addr });
+                let manager = ClaManager::new(|bundle| {
+                    println!("📥 Received: {:?}", bundle);
+                });
+                tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()?
+                    .block_on(async {
+                        manager.register(cla).await;
+                        futures::future::pending::<()>().await;
+                    });
+            }
+
+            DaemonCmd::Dialer { addr } => {
+                let cla = Arc::new(spacearth_dtn::cla::TcpClaDialer { target_addr: addr });
+                let manager = ClaManager::new(|bundle| {
+                    println!("📤 Should not receive here (Dialer): {:?}", bundle);
+                });
+                tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()?
+                    .block_on(async {
+                        manager.register(cla).await;
+                        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                    });
+            }
+        },
     }
 
     Ok(())

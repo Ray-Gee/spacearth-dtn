@@ -34,8 +34,8 @@ For questions, suggestions, or contributions, please contact:
 A command-line tool for creating and managing Bundle Protocol bundles is available:
 
 ```bash
-# Build the project
-cargo build --release
+# Install the project
+cargo install --path .
 
 # Create a bundle
 sdtn insert --message "Hello, DTN!"
@@ -66,6 +66,27 @@ export DTN_CONFIG="config/development.toml"
 export DTN_BUNDLE_VERSION=8
 export DTN_ENDPOINTS_DESTINATION="dtn://new-dest"
 ```
+
+---
+
+## Testing the Setup
+
+You can verify basic DTN communication with the following steps:
+
+### 1. Start the listener (receiver)
+```bash
+# Run in terminal 1
+sdtn daemon listener --addr 127.0.0.1:3000
+```
+
+### 2. Create a bundle and send it via dialer (sender)
+```bash
+# Run in terminal 2
+sdtn insert --message "Hello, DTN!"
+sdtn daemon dialer --addr 127.0.0.1:3000
+```
+
+This procedure allows you to verify that the created bundle is transmitted via TCP and received by the listener.
 
 ---
 

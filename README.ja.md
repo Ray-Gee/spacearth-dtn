@@ -31,8 +31,8 @@
 Bundle Protocolのバンドルを作成・管理するためのコマンドラインツールが利用可能です：
 
 ```bash
-# プロジェクトのビルド
-cargo build --release
+# プロジェクトのインストール
+cargo install --path .
 
 # バンドルの作成
 sdtn insert --message "Hello, DTN!"
@@ -63,6 +63,27 @@ export DTN_CONFIG="config/development.toml"
 export DTN_BUNDLE_VERSION=8
 export DTN_ENDPOINTS_DESTINATION="dtn://new-dest"
 ```
+
+---
+
+## 動作確認
+
+以下の手順で基本的なDTN通信の動作を確認できます：
+
+### 1. リスナー（受信側）を起動
+```bash
+# ターミナル1で実行
+sdtn daemon listener --addr 127.0.0.1:3000
+```
+
+### 2. バンドルを作成し、ダイアラー（送信側）で送信
+```bash
+# ターミナル2で実行
+sdtn insert --message "Hello, DTN!"
+sdtn daemon dialer --addr 127.0.0.1:3000
+```
+
+この手順により、作成したバンドルがTCP経由で送信され、リスナー側で受信されることを確認できます。
 
 ---
 

@@ -10,6 +10,9 @@ pub trait ConvergenceLayer: Send + Sync {
     async fn activate(&self) -> anyhow::Result<()>;
 }
 
+// TODO: receive_callbackの責任分担を明確にする
+// 現在ClaManagerとTcpClaListenerの両方でコールバックを保持している
+// 理想的にはClaManagerが統一的にコールバックを管理すべき
 pub struct ClaManager {
     state: Arc<RwLock<ClaState>>,
     receive_callback: Arc<dyn Fn(Bundle) + Send + Sync>,

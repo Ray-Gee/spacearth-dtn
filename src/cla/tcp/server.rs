@@ -5,6 +5,9 @@ use serde_cbor;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 
+// TODO: receive_callbackがClaManagerとTcpClaListenerの両方で保持されている
+// 設計を見直して、コールバックの責任を一箇所に集約する必要がある
+// 例: ClaManagerが全てのCLAのコールバックを管理し、各CLAは単純にデータを転送するだけにする
 pub struct TcpClaListener {
     pub bind_addr: String,
     pub receive_callback: Arc<dyn Fn(Bundle) + Send + Sync>,

@@ -43,9 +43,6 @@ sdtn list
 # バンドルの詳細表示（部分IDを使用）
 sdtn show --id <partial_id>
 
-# すべてのバンドルを宛先に送信
-sdtn dispatch
-
 # デーモンリスナー（受信側）を開始
 sdtn daemon listener --addr 127.0.0.1:3000
 

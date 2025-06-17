@@ -46,9 +46,6 @@ sdtn list
 # Show bundle details (using partial ID)
 sdtn show --id <partial_id>
 
-# Dispatch all bundles to the destination
-sdtn dispatch
-
 # Start daemon listener (receiver)
 sdtn daemon listener --addr 127.0.0.1:3000
 

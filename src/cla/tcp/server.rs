@@ -89,7 +89,7 @@ mod tests {
     use std::sync::Mutex;
     use std::time::{SystemTime, UNIX_EPOCH};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::{TcpListener, TcpStream};
+    use tokio::net::TcpStream;
     use tokio::time::Duration;
 
     fn create_test_bundle(source: &str, destination: &str, payload: &[u8]) -> Bundle {

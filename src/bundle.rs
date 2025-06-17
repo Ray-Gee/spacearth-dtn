@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrimaryBlock {
     pub version: u8,
     pub destination: String,
@@ -10,7 +10,7 @@ pub struct PrimaryBlock {
     pub lifetime: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bundle {
     pub primary: PrimaryBlock,
     pub payload: Vec<u8>,

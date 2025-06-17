@@ -35,4 +35,12 @@ impl Bundle {
             payload,
         }
     }
+
+    pub fn is_expired(&self) -> bool {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        now > self.primary.creation_timestamp + self.primary.lifetime
+    }
 }

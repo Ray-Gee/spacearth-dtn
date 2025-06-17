@@ -102,4 +102,42 @@ impl BundleStore {
         fs::rename(src, dst)?;
         Ok(())
     }
+
+    pub fn cleanup_expired(&self) -> Result<()> {
+        let ids = self.list()?;
+        println!("🔍 Found {} bundle IDs: {:?}", ids.len(), ids);
+        if ids.is_empty() {
+            println!("📦 No bundles found");
+            return Ok(());
+        }
+
+        for id in ids {
+            let bundle = match self.load_by_partial_id(&id) {
+                Ok(bundle) => bundle,
+                Err(e) => {
+                    if let Some(io_err) = e.downcast_ref::<std::io::Error>() {
+                        if io_err.kind() == std::io::ErrorKind::NotFound {
+                            continue;
+                        }
+                    }
+                    return Err(e);
+                }
+            };
+
+            if bundle.is_expired() {
+                let path = self.dir.join(format!("{id}.cbor"));
+                println!("🔍 Attempting to remove: {:?}", path);
+                match std::fs::remove_file(&path) {
+                    Ok(_) => println!("🗑️  Removed expired bundle: {id}"),
+                    Err(e) => {
+                        println!("❌ Failed to remove: {:?} - {:?}", path, e);
+                        if e.kind() != std::io::ErrorKind::NotFound {
+                            return Err(e.into());
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 }

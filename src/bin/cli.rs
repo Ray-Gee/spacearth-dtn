@@ -29,6 +29,7 @@ enum Command {
         #[clap(subcommand)]
         cmd: DaemonCmd,
     },
+    Cleanup,
 }
 
 #[derive(Parser)]
@@ -118,6 +119,10 @@ fn main() -> anyhow::Result<()> {
                     });
             }
         },
+
+        Command::Cleanup => {
+            store.cleanup_expired()?;
+        }
     }
 
     Ok(())

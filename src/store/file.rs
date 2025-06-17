@@ -76,22 +76,6 @@ impl BundleStore {
         Ok(result)
     }
 
-    pub fn dispatch_all(&self, dispatched_dir: &Path) -> Result<()> {
-        fs::create_dir_all(dispatched_dir)?;
-        for id in self.list()? {
-            let bundle = self.load(&id)?;
-            println!("📤 Dispatching bundle: {}", id);
-
-            // ⚠️ Actual transmission is still a dummy (only logging for now)
-            println!("  To: {}", bundle.primary.destination);
-
-            let from = self.dir.join(format!("{id}.cbor"));
-            let to = dispatched_dir.join(format!("{id}.cbor"));
-            fs::rename(from, to)?;
-        }
-        Ok(())
-    }
-
     pub fn dispatch_one(&self, bundle: &Bundle, dispatched_dir: &Path) -> Result<()> {
         let src = self.filename_for(bundle);
         let dst = dispatched_dir.join(

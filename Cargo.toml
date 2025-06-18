@@ -7,7 +7,7 @@ description = "A Rust-based implementation of Delay Tolerant Networking (DTN) fo
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/Ray-Gee/spacearth-dtn"
-keywords = ["dtn", "dtn7", "delay-tolerant-network", "bundle-protocol", "rfc9171"]
+keywords = ["dtn", "dtn7", "bundle-protocol", "rfc9171"]
 categories = ["asynchronous", "network-programming"]
 
 [dependencies]

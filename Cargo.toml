@@ -1,7 +1,14 @@
 [package]
 name = "spacearth-dtn"
 version = "0.1.0"
+authors = ["ray-gee"]
 edition = "2021"
+description = "A Rust-based implementation of Delay Tolerant Networking (DTN) for resilient communication"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/Ray-Gee/spacearth-dtn"
+keywords = ["dtn", "dtn7", "delay-tolerant-network", "bundle-protocol", "rfc9171"]
+categories = ["asynchronous", "network-programming"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -15,6 +22,8 @@ sha2 = "0.10"
 tokio = { version = "1.0", features = ["full"] }
 async-trait = "0.1"
 futures = "0.3.31"
+btleplug = "0.11.8"
+uuid = "1.17.0"
 
 [dev-dependencies]
 tempfile = "3.20.0"

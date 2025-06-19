@@ -29,7 +29,7 @@ uuid = "1.17.0"
 tempfile = "3.20.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-bluer = "0.17.4"
+bluer = { version = "0.17.4", features = ["bluetoothd"] }
 
 [[bin]]
 name = "sdtn"

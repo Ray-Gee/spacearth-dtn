@@ -1,15 +1,7 @@
 #[cfg(target_os = "linux")]
-use crate::consts::ble::{ACK, ADV_NAME, NOTIFY_CHAR_UUID, SERVICE_UUID, WRITE_CHAR_UUID};
+use crate::consts::ble::{ADV_NAME, SERVICE_UUID};
 #[cfg(target_os = "linux")]
-use bluer::{
-    adv::Advertisement,
-    gatt::local::{
-        Application, Characteristic, CharacteristicFlags, CharacteristicNotify, Service,
-    },
-    Address,
-};
-#[cfg(target_os = "linux")]
-use std::sync::{Arc, Mutex};
+use bluer::adv::Advertisement;
 #[cfg(target_os = "linux")]
 use tokio::time::{sleep, Duration};
 
@@ -22,9 +14,6 @@ async fn main() -> anyhow::Result<()> {
 
     println!("Using Bluetooth adapter: {}", adapter.name());
 
-    let received_data = Arc::new(Mutex::new(Vec::<u8>::new()));
-    let received_data_clone = received_data.clone();
-
     // Create a simple advertisement
     let advertisement = Advertisement {
         local_name: Some(ADV_NAME.to_string()),
@@ -33,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
         ..Default::default()
     };
 
-    let handle = adapter.advertise(advertisement).await?;
+    let _handle = adapter.advertise(advertisement).await?;
     println!("Advertising BLE Peripheral...");
 
     // For now, we'll just keep the advertising running

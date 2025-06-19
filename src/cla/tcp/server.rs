@@ -1,5 +1,6 @@
 use crate::bundle::Bundle;
 use crate::cla::ConvergenceLayer;
+use crate::consts::tcp::OK;
 use anyhow::Result;
 use serde_cbor;
 use std::sync::Arc;
@@ -75,7 +76,7 @@ where
 
         (callback)(bundle);
 
-        stream.write_all(b"OK").await?;
+        stream.write_all(OK.as_bytes()).await?;
     }
 
     Ok(())
@@ -131,7 +132,7 @@ mod tests {
         assert_eq!(listener.address(), "0.0.0.0:9090");
     }
 
-    async fn send_bundle_to_server(addr: &str, bundle: &Bundle) -> Result<String> {
+    async fn _send_bundle_to_server(addr: &str, bundle: &Bundle) -> Result<String> {
         let mut stream = TcpStream::connect(addr).await?;
 
         // Serialize bundle
@@ -320,7 +321,7 @@ mod tests {
         // This should cause an error when trying to allocate a huge buffer
         drop(client);
 
-        let result = tokio::time::timeout(Duration::from_millis(100), handle).await;
+        let _result = tokio::time::timeout(Duration::from_millis(100), handle).await;
         // The handler should either complete or timeout (both are acceptable for this test)
 
         Ok(())
@@ -343,7 +344,7 @@ mod tests {
 
         drop(client);
 
-        let result = tokio::time::timeout(Duration::from_millis(100), handle).await;
+        let _result = tokio::time::timeout(Duration::from_millis(100), handle).await;
         // Should timeout or complete with error
 
         Ok(())

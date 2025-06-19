@@ -1,3 +1,4 @@
+use crate::consts::{BUNDLES_DIR, DISPATCHED_DIR};
 use crate::store::file::BundleStore;
 use crate::{bundle::Bundle, cla::ConvergenceLayer};
 use anyhow::Result;
@@ -17,8 +18,8 @@ impl ConvergenceLayer for TcpClaDialer {
         let mut stream = TcpStream::connect(&self.target_addr).await?;
         println!("Connected to {}", self.target_addr);
 
-        let store = BundleStore::new("./bundles")?;
-        let dispatched_dir = std::path::Path::new("./dispatched");
+        let store = BundleStore::new(BUNDLES_DIR)?;
+        let dispatched_dir = std::path::Path::new(DISPATCHED_DIR);
 
         for id in store.list()? {
             let bundle = store.load_by_partial_id(&id)?;
@@ -62,6 +63,7 @@ pub async fn send_bundle(stream: &mut TcpStream, bundle: &Bundle) -> Result<()> 
 mod tests {
     use super::*;
     use crate::bundle::{Bundle, PrimaryBlock};
+    use crate::consts::tcp::*;
     use std::time::{SystemTime, UNIX_EPOCH};
     use tempfile::TempDir;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -179,7 +181,7 @@ mod tests {
     #[tokio::test]
     async fn test_send_bundle_success() -> Result<()> {
         let port = 18080;
-        mock_tcp_server(port, "OK").await?;
+        mock_tcp_server(port, OK).await?;
 
         let mut stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
         let bundle = create_test_bundle("dtn://source", "dtn://dest", b"test payload");
@@ -192,7 +194,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_bundle_with_different_acks() -> Result<()> {
-        let test_cases = vec!["OK", "ACK", "SUCCESS", "RECEIVED"];
+        let test_cases = [OK, ACK, SUCCESS, RECEIVED];
 
         for (i, ack) in test_cases.iter().enumerate() {
             let port = 18081 + i as u16;
@@ -215,7 +217,7 @@ mod tests {
     #[tokio::test]
     async fn test_send_bundle_large_payload() -> Result<()> {
         let port = 18090;
-        mock_tcp_server(port, "OK").await?;
+        mock_tcp_server(port, OK).await?;
 
         let mut stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
 
@@ -284,10 +286,10 @@ mod tests {
 
         // Create a temporary directory for empty bundle store
         let temp_dir = TempDir::new()?;
-        let temp_bundles_dir = temp_dir.path().join("test_bundles");
+        let _temp_bundles_dir = temp_dir.path().join("test_bundles");
 
         // Test with custom bundles directory
-        let dialer = TcpClaDialer {
+        let _dialer = TcpClaDialer {
             target_addr: format!("127.0.0.1:{}", port),
         };
 

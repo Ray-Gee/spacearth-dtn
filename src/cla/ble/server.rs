@@ -7,7 +7,7 @@ use tokio::time::{sleep, Duration};
 
 #[cfg(target_os = "linux")]
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn _main() -> anyhow::Result<()> {
     let session = bluer::Session::new().await?;
     let adapter = session.default_adapter().await?;
     adapter.set_powered(true).await?;

@@ -1,6 +1,6 @@
 use crate::consts::{BUNDLES_DIR, DISPATCHED_DIR};
 use crate::store::file::BundleStore;
-use crate::{bundle::Bundle, cla::ConvergenceLayer};
+use crate::{bpv7::bundle::Bundle, cla::ConvergenceLayer};
 use anyhow::Result;
 use tokio::net::TcpStream;
 
@@ -62,7 +62,7 @@ pub async fn send_bundle(stream: &mut TcpStream, bundle: &Bundle) -> Result<()> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bundle::{Bundle, PrimaryBlock};
+    use crate::bpv7::bundle::{Bundle, PrimaryBlock};
     use crate::consts::tcp::*;
     use std::time::{SystemTime, UNIX_EPOCH};
     use tempfile::TempDir;

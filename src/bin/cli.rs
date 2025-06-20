@@ -1,5 +1,5 @@
 use clap::Parser;
-use spacearth_dtn::bundle::*;
+use spacearth_dtn::bpv7::bundle::*;
 use spacearth_dtn::cla::manager::ClaManager;
 use spacearth_dtn::config::{generate_creation_timestamp, Config};
 use spacearth_dtn::store::BundleStore;

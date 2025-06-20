@@ -1,4 +1,4 @@
-use crate::bundle::Bundle;
+use crate::bpv7::bundle::Bundle;
 use crate::cla::ConvergenceLayer;
 use crate::consts::tcp::OK;
 use anyhow::Result;
@@ -85,7 +85,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bundle::{Bundle, PrimaryBlock};
+    use crate::bpv7::bundle::{Bundle, PrimaryBlock};
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Mutex;
     use std::time::{SystemTime, UNIX_EPOCH};

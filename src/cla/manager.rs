@@ -1,4 +1,4 @@
-use crate::bundle::Bundle;
+use crate::bpv7::bundle::Bundle;
 use async_trait::async_trait;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -77,7 +77,7 @@ impl Clone for ClaManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bundle::{Bundle, PrimaryBlock};
+    use crate::bpv7::bundle::{Bundle, PrimaryBlock};
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
     use tokio::sync::Mutex;

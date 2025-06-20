@@ -1,4 +1,4 @@
-use crate::bundle::Bundle;
+use crate::bpv7::bundle::Bundle;
 use anyhow::Result;
 use sha2::{Digest, Sha256};
 use std::{
@@ -129,7 +129,7 @@ impl BundleStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bundle::{Bundle, PrimaryBlock};
+    use crate::bpv7::bundle::{Bundle, PrimaryBlock};
     use std::time::{SystemTime, UNIX_EPOCH};
     use tempfile::TempDir;
 

@@ -2,10 +2,10 @@
 
 ![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)
 
-**spacearth-dtn** is a Rust-based implementation of Delay Tolerant Networking (DTN),  
+**spacearth-dtn** is a Rust-based implementation of Delay Tolerant Networking (DTN),
 designed for resilient communication between space and earth — and beyond.
 
-This project aims to offer modular, efficient, and extensible components for BPv7-based DTN systems,  
+This project aims to offer modular, efficient, and extensible components for BPv7-based DTN systems,
 suitable for both space and terrestrial disruption-tolerant networks.
 
 > "From space to earth. For the disconnected."
@@ -91,38 +91,41 @@ This procedure allows you to verify that the created bundle is transmitted via T
 
 Current development phase and future plans:
 
-1. ✅ **Bundle Structure & CBOR Support** (Completed)
+1. ✅ **Bundle Structure & CBOR Support**
    - Bundle structure definition
    - CBOR serialization/deserialization
    - Basic CLI operations
 
-2. ✅ **Bundle Storage/Load** (Completed)
+2. ✅ **Bundle Storage/Load**
    - File-based persistence
    - BundleStore implementation
    - Partial ID lookup support
    - Automatic test cleanup
    - Bundle dispatch functionality
 
-3. ✅ **CLA (Convergence Layer Adapter)** (Completed)
-   - TCP communication
-   - Basic daemon listener/dialer functionality
+3. ✅ **TCP CLA Communication**
+   - TCP CLA (Listener / Dialer) bundle transmission and reception
+   - ACK response (text format)
 
-4. 🔜 **Bundle Transmission & Reception** (Next)
-   - Bundle sending via CLA
-   - Bundle receiving and processing
+4. 🚧 **CLA Abstraction and Transmission Integration**
+   - Common interface definition via `trait Cla`
+   - Transmission and reception verification via CLA abstraction
    - Integration with BundleStore
 
-5. 🚧 **Forwarding Control**
-   - Relay node routing
-   - Routing rules implementation
+5. 🔜 **Routing Function Implementation (Highest Priority)**
+   - CLA selection based on destination
+   - Static routing table (destination → next hop)
+   - Structure consideration for future dynamic routing compatibility
 
-6. 🚧 **Software Bus**
+6. ⏸ **CLA Diversification (Low Priority)**
+   - BLE CLA: Both Central and Peripheral written in Rust (※Operation verification planned after Raspberry Pi purchase)
+   - LoRa CLA phased implementation (USB AT → SPI → embedded / RTOS)
+   - Dynamic CLA selection integration conforming to `trait Cla`
+
+7. 🚧 **Software Bus and Task Management**
    - Inter-process communication
    - Message queue
-
-7. 🚧 **Event Loop / Task Management**
-   - Async processing
-   - Task scheduling
+   - Async processing and task scheduling
 
 8. ⬛ **Management CLI / WebUI** (Optional)
    - Advanced management features
@@ -142,5 +145,5 @@ MIT OR Apache-2.0
 
 ## AI-Generated Content
 
-Some parts of this project (README, code comments, and sample logic) are co-authored or generated using AI tools.  
+Some parts of this project (README, code comments, and sample logic) are co-authored or generated using AI tools.
 All code is manually reviewed and tested before use.

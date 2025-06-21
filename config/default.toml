@@ -6,10 +6,16 @@ lifetime = 3600
 destination = "dtn://dest"
 source = "dtn://src"
 report_to = "dtn://report"
+default_lifetime = 86400
 
 [storage]
+type = "file"
 path = "bundles"
 max_size = 1024  # MB
 
 [routing]
 algorithm = "epidemic"
+
+[cla.tcp_server]
+enabled = true
+address = "127.0.0.1:4556"

@@ -489,3 +489,35 @@ fn test_cleanup_expired_edge_cases() {
     // so we'll just verify cleanup ran successfully
     assert!(ids_after.len() <= 1); // Could be 0 or 1 depending on timing
 }
+
+#[cfg(test)]
+mod existing_tests {
+    use super::*;
+
+    #[test]
+    fn test_bundle_store_reexport() {
+        // Test that the re-export works correctly
+        let store_type_id = std::any::TypeId::of::<BundleStore>();
+        let file_store_type_id = std::any::TypeId::of::<crate::store::file::BundleStore>();
+
+        assert_eq!(store_type_id, file_store_type_id);
+    }
+
+    #[test]
+    fn test_module_accessibility() {
+        // Test that the file module is accessible
+        use crate::store::file::BundleStore as FileBundleStore;
+
+        let _ = std::any::TypeId::of::<FileBundleStore>();
+        let _ = std::any::TypeId::of::<BundleStore>();
+    }
+
+    #[test]
+    fn test_type_names() {
+        let bundle_store_name = std::any::type_name::<BundleStore>();
+        let file_bundle_store_name = std::any::type_name::<crate::store::file::BundleStore>();
+
+        assert_eq!(bundle_store_name, file_bundle_store_name);
+        assert!(bundle_store_name.contains("BundleStore"));
+    }
+}

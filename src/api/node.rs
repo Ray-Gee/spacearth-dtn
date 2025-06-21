@@ -21,7 +21,16 @@ pub struct DtnNode {
 impl DtnNode {
     /// Create a new DTN CLI instance with default bundle store path ("./bundles")
     pub fn new() -> anyhow::Result<Self> {
-        Self::with_store_path("./bundles")
+        // Priority: Env Var -> Config File -> Default
+        let store_path = match std::env::var("SDTN_BUNDLE_PATH") {
+            Ok(path) => path,
+            Err(_) => match Config::load() {
+                Ok(config) => config.storage.path,
+                Err(_) => "./bundles".to_string(),
+            },
+        };
+
+        Self::with_store_path(&store_path)
     }
 
     /// Create a new DTN CLI instance with a custom bundle store path

@@ -19,6 +19,7 @@ fn run_cli(args: &[&str]) -> String {
     });
 
     let output = Command::new("./target/debug/sdtn")
+        .env("SDTN_BUNDLE_PATH", BUNDLE_DIR)
         .args(args)
         .output()
         .expect("Failed to execute command");

@@ -1,6 +1,6 @@
 [package]
 name = "sdtn"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["ray-gee"]
 edition = "2021"
 description = "SpaceArth DTN - A Rust-based implementation of Delay Tolerant Networking (DTN) for resilient communication"

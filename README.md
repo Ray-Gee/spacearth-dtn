@@ -1,14 +1,19 @@
-# spacearth-dtn
+# sdtn (SpaceArth DTN)
 
 ![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)
 
-**spacearth-dtn** is a Rust-based implementation of Delay Tolerant Networking (DTN),
+**sdtn** (SpaceArth DTN) is a Rust-based implementation of Delay Tolerant Networking (DTN),
 designed for resilient communication between space and earth — and beyond.
 
 This project aims to offer modular, efficient, and extensible components for BPv7-based DTN systems,
 suitable for both space and terrestrial disruption-tolerant networks.
 
 > "From space to earth. For the disconnected."
+
+## Documentation
+
+- [Usage Guide](USAGE.md) - Library usage and API documentation
+- [使用方法](USAGE.jp.md) - ライブラリの使用方法とAPIドキュメント（日本語）
 
 ## Contact
 
@@ -35,7 +40,7 @@ A command-line tool for creating and managing Bundle Protocol bundles is availab
 
 ```bash
 # Install the project
-cargo install --path .
+cargo install sdtn
 
 # Create a bundle
 sdtn insert --message "Hello, DTN!"

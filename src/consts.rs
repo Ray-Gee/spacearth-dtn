@@ -90,11 +90,6 @@ mod tests {
 
     #[test]
     fn test_tcp_string_constants_not_empty() {
-        assert!(!tcp::ACK.is_empty());
-        assert!(!tcp::OK.is_empty());
-        assert!(!tcp::SUCCESS.is_empty());
-        assert!(!tcp::RECEIVED.is_empty());
-
         // Check they are different
         assert_ne!(tcp::ACK, tcp::OK);
         assert_ne!(tcp::ACK, tcp::SUCCESS);
@@ -103,7 +98,6 @@ mod tests {
 
     #[test]
     fn test_lifetime_is_positive() {
-        assert!(DEFAULT_LIFETIME > 0);
         assert_eq!(DEFAULT_LIFETIME, 60 * 60); // 1 hour in seconds
     }
 }

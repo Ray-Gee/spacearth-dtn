@@ -7,7 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 static COMPILE_ONCE: Once = Once::new();
 
-const BUNDLE_DIR: &str = "bundles";
+const BUNDLE_DIR: &str = "./bundles";
 
 // Helper function to run CLI commands
 fn run_cli(args: &[&str]) -> String {

@@ -21,11 +21,22 @@ jobs:
       with:
         components: llvm-tools-preview
 
+    - name: Cache dependencies
+      uses: Swatinem/rust-cache@v2
+
     - name: Install cargo-llvm-cov
       run: cargo install cargo-llvm-cov
 
     - name: Generate code coverage
-      run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "Contents of current directory:"
+        ls -la
+        echo "Checking if config exists:"
+        ls -la config/ || echo "No config directory"
+        echo "Environment variables:"
+        env | grep -E "(SDTN|DTN)" || echo "No SDTN/DTN env vars"
+        cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

@@ -285,7 +285,8 @@ async fn test_find_best_route() -> anyhow::Result<()> {
 
     let best_route = node.find_best_route(&dest)?;
     assert!(best_route.is_some());
-    assert_eq!(best_route.unwrap().cost, 5); // Should be the cheaper route
+    let best = best_route.unwrap();
+    assert_eq!(best.cost, 5); // Should be the cheaper route
     Ok(())
 }
 
@@ -301,7 +302,7 @@ async fn test_find_best_route_no_routes() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_select_peers_for_forwarding() -> anyhow::Result<()> {
+async fn api_test_select_peers_for_forwarding() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
@@ -485,7 +486,208 @@ async fn test_complex_routing_scenario() -> anyhow::Result<()> {
     let dest = EndpointId::from("dtn://dest");
     let best_route = node.find_best_route(&dest)?;
     assert!(best_route.is_some());
-    assert_eq!(best_route.unwrap().cost, 5); // Should be the cheapest
+    let best = best_route.unwrap();
+    assert_eq!(best.cost, 5); // Should be the cheapest
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_routing_table() -> anyhow::Result<()> {
+    let temp_dir = TempDir::new()?;
+    let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
+
+    // Test getting routing table reference
+    let routing_table = node.get_routing_table();
+
+    // Add a route through the reference
+    {
+        let mut table = routing_table.lock().unwrap();
+        table.add_route(RouteEntry {
+            destination: EndpointId::from("dtn://test-dest"),
+            next_hop: EndpointId::from("dtn://test-router"),
+            cla_type: "tcp".to_string(),
+            cost: 15,
+            is_active: true,
+        });
+    }
+
+    // Verify through node's get_all_routes
+    let routes = node.get_all_routes()?;
+    assert_eq!(routes.len(), 1);
+    assert_eq!(routes[0].destination.as_str(), "dtn://test-dest");
+    assert_eq!(routes[0].cost, 15);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn api_test_select_peers_for_forwarding_async() -> anyhow::Result<()> {
+    let temp_dir = TempDir::new()?;
+    let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
+
+    node.insert_bundle("Test async peer selection".to_string())
+        .await?;
+
+    let bundles = node.list_bundles()?;
+    let bundle_id = bundles.first().unwrap();
+    let bundle = node.show_bundle(bundle_id)?;
+
+    let peers = node.select_peers_for_forwarding_async(&bundle).await?;
+    assert_eq!(peers.len(), 0); // No reachable peers expected in this environment
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_error_handling_empty_bundle_list() -> anyhow::Result<()> {
+    let temp_dir = TempDir::new()?;
+    let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
+
+    // Test with empty bundle store
+    let bundles = node.list_bundles()?;
+    assert_eq!(bundles.len(), 0);
+
+    // Test status with no bundles
+    let status = node.get_bundle_status(None)?;
+    match status {
+        BundleStatus::Summary {
+            active,
+            expired,
+            total,
+        } => {
+            assert_eq!(active, 0);
+            assert_eq!(expired, 0);
+            assert_eq!(total, 0);
+        }
+        _ => panic!("Expected Summary status"),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_show_bundle_nonexistent() -> anyhow::Result<()> {
+    let temp_dir = TempDir::new()?;
+    let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
+
+    // Test showing non-existent bundle
+    let result = node.show_bundle("nonexistent_bundle_id");
+    assert!(result.is_err());
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_find_best_route_multiple_costs() -> anyhow::Result<()> {
+    let temp_dir = TempDir::new()?;
+    let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
+
+    let dest = EndpointId::from("dtn://multi-cost");
+
+    // Add routes with different costs
+    node.add_route(RouteEntry {
+        destination: dest.clone(),
+        next_hop: EndpointId::from("dtn://expensive"),
+        cla_type: "tcp".to_string(),
+        cost: 100,
+        is_active: true,
+    })?;
+
+    node.add_route(RouteEntry {
+        destination: dest.clone(),
+        next_hop: EndpointId::from("dtn://medium"),
+        cla_type: "ble".to_string(),
+        cost: 50,
+        is_active: true,
+    })?;
+
+    node.add_route(RouteEntry {
+        destination: dest.clone(),
+        next_hop: EndpointId::from("dtn://cheap"),
+        cla_type: "lora".to_string(),
+        cost: 10,
+        is_active: true,
+    })?;
+
+    let best_route = node.find_best_route(&dest)?;
+    assert!(best_route.is_some());
+    let best = best_route.unwrap();
+    assert_eq!(best.cost, 10); // Should be the cheapest
+    assert_eq!(best.next_hop.as_str(), "dtn://cheap");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_routing_config_varieties() -> anyhow::Result<()> {
+    use crate::routing::algorithm::{RoutingAlgorithmType, RoutingConfig};
+    let temp_dir = TempDir::new()?;
+
+    // Test with Epidemic routing
+    let epidemic_config = RoutingConfig::new(RoutingAlgorithmType::Epidemic);
+    let epidemic_node =
+        DtnNode::with_routing_algorithm(temp_dir.path().to_str().unwrap(), epidemic_config)?;
+
+    epidemic_node
+        .insert_bundle("Epidemic test".to_string())
+        .await?;
+    let bundles = epidemic_node.list_bundles()?;
+    assert_eq!(bundles.len(), 1);
+
+    // Test with Prophet routing (should fall back to epidemic)
+    let prophet_config = RoutingConfig::new(RoutingAlgorithmType::Prophet);
+    let prophet_node =
+        DtnNode::with_routing_algorithm(temp_dir.path().to_str().unwrap(), prophet_config)?;
+
+    prophet_node
+        .insert_bundle("Prophet fallback test".to_string())
+        .await?;
+    let bundles = prophet_node.list_bundles()?;
+    assert_eq!(bundles.len(), 2); // Same store as epidemic_node
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_bundle_status_with_partial_failures() -> anyhow::Result<()> {
+    let temp_dir = TempDir::new()?;
+    let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
+
+    // Insert valid bundles
+    node.insert_bundle("Valid bundle 1".to_string()).await?;
+    node.insert_bundle("Valid bundle 2".to_string()).await?;
+
+    let status = node.get_bundle_status(None)?;
+    match status {
+        BundleStatus::Summary {
+            active,
+            expired,
+            total,
+        } => {
+            assert_eq!(active, 2);
+            assert_eq!(expired, 0);
+            assert_eq!(total, 2);
+        }
+        _ => panic!("Expected Summary status"),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_cleanup_expired_no_expired_bundles() -> anyhow::Result<()> {
+    let temp_dir = TempDir::new()?;
+    let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
+
+    // Insert fresh bundles (not expired)
+    node.insert_bundle("Fresh bundle".to_string()).await?;
+
+    // Cleanup should succeed without removing anything
+    node.cleanup_expired()?;
+
+    let bundles = node.list_bundles()?;
+    assert_eq!(bundles.len(), 1); // Bundle should still be there
 
     Ok(())
 }

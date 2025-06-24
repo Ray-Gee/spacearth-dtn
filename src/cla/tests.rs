@@ -70,6 +70,7 @@ use crate::cla::manager::*;
 use crate::cla::tcp::client::*;
 use crate::cla::tcp::server::*;
 use crate::consts::tcp::*;
+use crate::routing::algorithm::ClaPeer;
 use async_trait::async_trait;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -952,4 +953,157 @@ fn test_create_test_bundle_various_payloads() {
         let bundle = create_test_bundle("src", "dst", &payload);
         assert_eq!(bundle.payload, payload);
     }
+}
+
+// TcpPeer tests for better coverage
+#[test]
+fn test_tcp_peer_new() {
+    let eid = crate::bpv7::EndpointId::from("dtn://test-peer");
+    let peer = crate::cla::TcpPeer::new(eid.clone(), "192.168.1.100:8080".to_string());
+
+    assert_eq!(peer.peer_id, eid);
+    assert_eq!(peer.address, "192.168.1.100:8080");
+}
+
+#[test]
+fn test_tcp_peer_from_endpoint_id() {
+    let eid = crate::bpv7::EndpointId::from("dtn://test-node");
+    let peer = crate::cla::TcpPeer::from_endpoint_id(eid.clone());
+
+    assert_eq!(peer.peer_id, eid);
+    assert_eq!(peer.address, "dtn://test-node");
+}
+
+#[test]
+fn test_tcp_peer_for_test() {
+    let eid = crate::bpv7::EndpointId::from("dtn://test-endpoint");
+    let peer = crate::cla::TcpPeer::for_test(eid.clone());
+
+    assert_eq!(peer.peer_id, eid);
+    assert_eq!(peer.address, "dtn://test-endpoint");
+}
+
+#[test]
+fn test_tcp_peer_get_peer_endpoint_id() {
+    let eid = crate::bpv7::EndpointId::from("dtn://my-peer");
+    let peer = crate::cla::TcpPeer::new(eid.clone(), "10.0.0.1:9090".to_string());
+
+    assert_eq!(peer.get_peer_endpoint_id(), eid);
+}
+
+#[test]
+fn test_tcp_peer_get_cla_type() {
+    let eid = crate::bpv7::EndpointId::from("dtn://any-peer");
+    let peer = crate::cla::TcpPeer::new(eid, "localhost:8080".to_string());
+
+    assert_eq!(peer.get_cla_type(), "tcp");
+}
+
+#[test]
+fn test_tcp_peer_get_connection_address() {
+    let eid = crate::bpv7::EndpointId::from("dtn://addr-test");
+    let address = "example.com:1234".to_string();
+    let peer = crate::cla::TcpPeer::new(eid, address.clone());
+
+    assert_eq!(peer.get_connection_address(), address);
+}
+
+#[tokio::test]
+async fn test_tcp_peer_is_reachable_unreachable() {
+    let eid = crate::bpv7::EndpointId::from("dtn://unreachable");
+    let peer = crate::cla::TcpPeer::new(eid, "127.0.0.1:19998".to_string()); // Non-existent port
+
+    let reachable = peer.is_reachable().await;
+    assert!(!reachable);
+}
+
+#[tokio::test]
+async fn test_tcp_peer_is_reachable_timeout() {
+    let eid = crate::bpv7::EndpointId::from("dtn://timeout-test");
+    // Use a non-routable address that will cause timeout
+    let peer = crate::cla::TcpPeer::new(eid, "192.0.2.1:80".to_string()); // TEST-NET-1 (RFC 5737)
+
+    let reachable = peer.is_reachable().await;
+    assert!(!reachable);
+}
+
+#[tokio::test]
+async fn test_tcp_peer_is_reachable_with_mock_server() -> anyhow::Result<()> {
+    // Create a mock server to test successful connection
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let port = listener.local_addr()?.port();
+
+    // Start a server that accepts connections
+    tokio::spawn(async move {
+        if let Ok((stream, _)) = listener.accept().await {
+            drop(stream); // Just accept and close
+        }
+    });
+
+    let eid = crate::bpv7::EndpointId::from("dtn://reachable");
+    let peer = crate::cla::TcpPeer::new(eid, format!("127.0.0.1:{}", port));
+
+    // Give server time to start
+    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+
+    let reachable = peer.is_reachable().await;
+    assert!(reachable);
+
+    Ok(())
+}
+
+// Additional TcpClaClient tests
+#[test]
+fn test_tcp_cla_client_new() {
+    let client = TcpClaClient {
+        target_addr: "test.example.com:8080".to_string(),
+    };
+    assert_eq!(client.target_addr, "test.example.com:8080");
+}
+
+#[tokio::test]
+async fn test_tcp_cla_client_activate_connection_refused() {
+    let client = TcpClaClient {
+        target_addr: "127.0.0.1:19997".to_string(), // Non-existent server
+    };
+
+    let result = client.activate().await;
+    assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_tcp_cla_client_activate_invalid_address() {
+    let client = TcpClaClient {
+        target_addr: "invalid-hostname:8080".to_string(),
+    };
+
+    let result = client.activate().await;
+    assert!(result.is_err());
+}
+
+// Test create_bundle function variations
+#[test]
+fn test_create_bundle_empty_payload() {
+    let bundle = create_bundle("dtn://src", "dtn://dst", vec![]);
+    assert_eq!(bundle.payload, b"");
+    assert_eq!(bundle.primary.source, "dtn://src");
+    assert_eq!(bundle.primary.destination, "dtn://dst");
+}
+
+#[test]
+fn test_create_bundle_large_payload() {
+    let large_payload = vec![0xFF; 1000];
+    let bundle = create_bundle("dtn://big-src", "dtn://big-dst", large_payload.clone());
+    assert_eq!(bundle.payload, large_payload);
+}
+
+#[test]
+fn test_create_bundle_unicode_addresses() {
+    let bundle = create_bundle(
+        "dtn://テスト送信",
+        "dtn://テスト受信",
+        b"unicode test".to_vec(),
+    );
+    assert_eq!(bundle.primary.source, "dtn://テスト送信");
+    assert_eq!(bundle.primary.destination, "dtn://テスト受信");
 }

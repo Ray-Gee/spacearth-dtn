@@ -264,7 +264,7 @@ fn test_notify_new_bundle() {
 }
 
 #[test]
-fn test_select_peers_for_forwarding() {
+fn routing_test_select_peers_for_forwarding() {
     let routing = EpidemicRouting;
     let bundle = Bundle::new("dtn://source", "dtn://dest", b"test".to_vec());
     let descriptor = BundleDescriptor::new(bundle);
@@ -457,4 +457,54 @@ fn test_select_routes_for_forwarding_duplicate_next_hops() {
 
     let selected = routing.select_routes_for_forwarding(&descriptor, &routing_table);
     assert_eq!(selected.len(), 0); // Epidemic routing does not use routing table
+}
+
+#[tokio::test]
+async fn routing_test_select_peers_for_forwarding_async() {
+    use crate::bpv7::EndpointId;
+    use crate::routing::algorithm::ClaPeer;
+    use async_trait::async_trait;
+
+    struct DummyPeer {
+        eid: EndpointId,
+        reachable: bool,
+    }
+
+    #[async_trait]
+    impl ClaPeer for DummyPeer {
+        fn get_peer_endpoint_id(&self) -> EndpointId {
+            self.eid.clone()
+        }
+        fn get_connection_address(&self) -> String {
+            "dummy".to_string()
+        }
+        fn get_cla_type(&self) -> &str {
+            "dummy"
+        }
+        async fn is_reachable(&self) -> bool {
+            self.reachable
+        }
+    }
+
+    let routing = EpidemicRouting;
+    let bundle = Bundle::new("dtn://source", "dtn://dest", b"test".to_vec());
+    let descriptor = BundleDescriptor::new(bundle);
+
+    let peer1: Box<dyn ClaPeer> = Box::new(DummyPeer {
+        eid: EndpointId::from("dtn://peer1"),
+        reachable: true,
+    });
+    let peer2: Box<dyn ClaPeer> = Box::new(DummyPeer {
+        eid: EndpointId::from("dtn://peer2"),
+        reachable: false,
+    });
+
+    let all_peers = vec![peer1, peer2];
+    let selected = routing
+        .select_peers_for_forwarding_async(&descriptor, &all_peers)
+        .await;
+
+    // Only reachable peer should be selected
+    assert_eq!(selected.len(), 1);
+    assert_eq!(selected[0].get_peer_endpoint_id().as_str(), "dtn://peer1");
 }

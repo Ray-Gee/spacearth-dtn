@@ -2,7 +2,12 @@ pub const DEFAULT_VERSION: u8 = 7;
 pub const DEFAULT_LIFETIME: u64 = 3600;
 pub const DEFAULT_REPORT_TO: &str = "none";
 pub const BUNDLES_DIR: &str = "./bundles";
-pub const DISPATCHED_DIR: &str = "./dispatched";
+pub const DISPATCHED_DIR: &str = "./bundles/dispatched";
+
+// Bundle subdirectories
+pub const BUNDLES_BASIC_DIR: &str = "./bundles/basic";
+pub const BUNDLES_ADVANCED_DIR: &str = "./bundles/advanced";
+pub const BUNDLES_CUSTOM_ROUTING_DIR: &str = "./bundles/custom_routing";
 
 pub mod ble {
     pub const SERVICE_UUID: &str = "12345678-1234-5678-1234-56789abcdef0";
@@ -29,7 +34,7 @@ mod tests {
         assert_eq!(DEFAULT_LIFETIME, 3600);
         assert_eq!(DEFAULT_REPORT_TO, "none");
         assert_eq!(BUNDLES_DIR, "./bundles");
-        assert_eq!(DISPATCHED_DIR, "./dispatched");
+        assert_eq!(DISPATCHED_DIR, "./bundles/dispatched");
     }
 
     #[test]
@@ -84,8 +89,18 @@ mod tests {
     #[test]
     fn test_directory_paths() {
         assert!(BUNDLES_DIR.starts_with("./"));
-        assert!(DISPATCHED_DIR.starts_with("./"));
+        assert!(DISPATCHED_DIR.starts_with("./bundles/"));
         assert_ne!(BUNDLES_DIR, DISPATCHED_DIR);
+
+        // Test bundle subdirectory paths
+        assert_eq!(BUNDLES_BASIC_DIR, "./bundles/basic");
+        assert_eq!(BUNDLES_ADVANCED_DIR, "./bundles/advanced");
+        assert_eq!(BUNDLES_CUSTOM_ROUTING_DIR, "./bundles/custom_routing");
+
+        // Ensure all paths are different
+        assert_ne!(BUNDLES_BASIC_DIR, BUNDLES_ADVANCED_DIR);
+        assert_ne!(BUNDLES_BASIC_DIR, BUNDLES_CUSTOM_ROUTING_DIR);
+        assert_ne!(BUNDLES_ADVANCED_DIR, BUNDLES_CUSTOM_ROUTING_DIR);
     }
 
     #[test]

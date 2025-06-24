@@ -2,9 +2,9 @@ use super::DtnNode;
 use crate::bpv7::bundle::Bundle;
 
 /// Quick bundle insertion using default settings
-pub fn insert_bundle_quick(message: &str) -> anyhow::Result<()> {
+pub async fn insert_bundle_quick(message: &str) -> anyhow::Result<()> {
     let node = DtnNode::new()?;
-    node.insert_bundle(message.to_string())
+    node.insert_bundle(message.to_string()).await
 }
 
 /// Quick bundle listing using default settings

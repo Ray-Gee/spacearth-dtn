@@ -2,14 +2,14 @@ use crate::api::convenience::{insert_bundle_quick, list_bundles_quick, show_bund
 use std::env;
 use tempfile::TempDir;
 
-#[test]
-fn test_insert_bundle_quick_function() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_insert_bundle_quick_function() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
 
     // Set environment variable to use temp directory
     env::set_var("SDTN_BUNDLE_PATH", temp_dir.path().to_str().unwrap());
 
-    let result = insert_bundle_quick("Test message for quick insert");
+    let result = insert_bundle_quick("Test message for quick insert").await;
 
     // Clean up environment variable
     env::remove_var("SDTN_BUNDLE_PATH");
@@ -54,15 +54,15 @@ fn test_show_bundle_quick_function() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_convenience_functions_workflow() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_convenience_functions_workflow() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
 
     // Set environment variable to use temp directory
     env::set_var("SDTN_BUNDLE_PATH", temp_dir.path().to_str().unwrap());
 
     // Try to insert a bundle
-    let insert_result = insert_bundle_quick("Workflow test message");
+    let insert_result = insert_bundle_quick("Workflow test message").await;
 
     // Try to list bundles
     let list_result = list_bundles_quick();
@@ -83,15 +83,15 @@ fn test_convenience_functions_error_handling() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_convenience_functions_empty_input() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_convenience_functions_empty_input() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
 
     // Set environment variable to use temp directory
     env::set_var("SDTN_BUNDLE_PATH", temp_dir.path().to_str().unwrap());
 
     // Test with empty message
-    let result = insert_bundle_quick("");
+    let result = insert_bundle_quick("").await;
 
     // Clean up environment variable
     env::remove_var("SDTN_BUNDLE_PATH");
@@ -101,15 +101,15 @@ fn test_convenience_functions_empty_input() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_convenience_functions_unicode() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_convenience_functions_unicode() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
 
     // Set environment variable to use temp directory
     env::set_var("SDTN_BUNDLE_PATH", temp_dir.path().to_str().unwrap());
 
     // Test with unicode message
-    let result = insert_bundle_quick("テスト メッセージ 🚀");
+    let result = insert_bundle_quick("テスト メッセージ 🚀").await;
 
     // Clean up environment variable
     env::remove_var("SDTN_BUNDLE_PATH");
@@ -123,8 +123,8 @@ use crate::api::{node::DtnNode, BundleStatus};
 use crate::bpv7::EndpointId;
 use crate::routing::algorithm::{RouteEntry, RoutingAlgorithmType, RoutingConfig};
 
-#[test]
-fn test_dtn_node_new() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_dtn_node_new() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let _node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
@@ -133,14 +133,14 @@ fn test_dtn_node_new() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_dtn_node_default() {
+#[tokio::test]
+async fn test_dtn_node_default() {
     let _node = DtnNode::default();
     // Note: store_path is private, so we can't directly test it
 }
 
-#[test]
-fn test_dtn_node_with_config() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_dtn_node_with_config() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let _node = DtnNode::with_config(Some(temp_dir.path().to_str().unwrap()))?;
 
@@ -148,15 +148,15 @@ fn test_dtn_node_with_config() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_dtn_node_with_config_default_path() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_dtn_node_with_config_default_path() -> anyhow::Result<()> {
     let _node = DtnNode::with_config(None)?;
     // Note: store_path is private, so we can't directly test it
     Ok(())
 }
 
-#[test]
-fn test_dtn_node_with_routing_algorithm() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_dtn_node_with_routing_algorithm() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let routing_config = RoutingConfig::new(RoutingAlgorithmType::Epidemic);
     let _node = DtnNode::with_routing_algorithm(temp_dir.path().to_str().unwrap(), routing_config)?;
@@ -165,39 +165,39 @@ fn test_dtn_node_with_routing_algorithm() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_insert_bundle() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_insert_bundle() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
-    node.insert_bundle("Test message".to_string())?;
+    node.insert_bundle("Test message".to_string()).await?;
 
     let bundles = node.list_bundles()?;
     assert_eq!(bundles.len(), 1);
     Ok(())
 }
 
-#[test]
-fn test_insert_multiple_bundles() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_insert_multiple_bundles() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
-    node.insert_bundle("Message 1".to_string())?;
-    node.insert_bundle("Message 2".to_string())?;
-    node.insert_bundle("Message 3".to_string())?;
+    node.insert_bundle("Message 1".to_string()).await?;
+    node.insert_bundle("Message 2".to_string()).await?;
+    node.insert_bundle("Message 3".to_string()).await?;
 
     let bundles = node.list_bundles()?;
     assert_eq!(bundles.len(), 3);
     Ok(())
 }
 
-#[test]
-fn test_show_bundle() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_show_bundle() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
     let message = "Test message for show";
-    node.insert_bundle(message.to_string())?;
+    node.insert_bundle(message.to_string()).await?;
 
     let bundles = node.list_bundles()?;
     let bundle_id = bundles.first().unwrap();
@@ -207,8 +207,8 @@ fn test_show_bundle() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_add_route() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_add_route() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
@@ -228,8 +228,8 @@ fn test_add_route() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_add_multiple_routes() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_add_multiple_routes() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
@@ -257,8 +257,8 @@ fn test_add_multiple_routes() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_find_best_route() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_find_best_route() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
@@ -289,8 +289,8 @@ fn test_find_best_route() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_find_best_route_no_routes() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_find_best_route_no_routes() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
@@ -300,40 +300,40 @@ fn test_find_best_route_no_routes() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_select_peers_for_forwarding() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_select_peers_for_forwarding() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
-    node.insert_bundle("Test message".to_string())?;
+    node.insert_bundle("Test message".to_string()).await?;
 
     let bundles = node.list_bundles()?;
     let bundle_id = bundles.first().unwrap();
     let bundle = node.show_bundle(bundle_id)?;
 
-    let peers = node.select_peers_for_forwarding(&bundle)?;
+    let peers = node.select_peers_for_forwarding(&bundle).await?;
     assert_eq!(peers.len(), 2); // Should return the dummy peers
     Ok(())
 }
 
-#[test]
-fn test_select_routes_for_forwarding_empty_table() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_select_routes_for_forwarding_empty_table() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
-    node.insert_bundle("Test message".to_string())?;
+    node.insert_bundle("Test message".to_string()).await?;
 
     let bundles = node.list_bundles()?;
     let bundle_id = bundles.first().unwrap();
     let bundle = node.show_bundle(bundle_id)?;
 
-    let routes = node.select_routes_for_forwarding(&bundle)?;
-    assert_eq!(routes.len(), 0); // No routes in table
+    let selected = node.select_routes_for_forwarding(&bundle).await?;
+    assert_eq!(selected.len(), 0); // Epidemic routing does not use routing table
     Ok(())
 }
 
-#[test]
-fn test_select_routes_for_forwarding_with_routes() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_select_routes_for_forwarding_with_routes() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
@@ -354,23 +354,23 @@ fn test_select_routes_for_forwarding_with_routes() -> anyhow::Result<()> {
         is_active: true,
     })?;
 
-    node.insert_bundle("Test message".to_string())?;
+    node.insert_bundle("Test message".to_string()).await?;
 
     let bundles = node.list_bundles()?;
     let bundle_id = bundles.first().unwrap();
     let bundle = node.show_bundle(bundle_id)?;
 
-    let routes = node.select_routes_for_forwarding(&bundle)?;
-    assert_eq!(routes.len(), 2); // Epidemic routing should select all routes
+    let selected = node.select_routes_for_forwarding(&bundle).await?;
+    assert_eq!(selected.len(), 0); // Epidemic routing does not use routing table
     Ok(())
 }
 
-#[test]
-fn test_get_bundle_status_single() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_get_bundle_status_single() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
-    node.insert_bundle("Test message".to_string())?;
+    node.insert_bundle("Test message".to_string()).await?;
 
     let bundles = node.list_bundles()?;
     let bundle_id = bundles.first().unwrap();
@@ -386,13 +386,13 @@ fn test_get_bundle_status_single() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_get_bundle_status_summary() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_get_bundle_status_summary() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
-    node.insert_bundle("Message 1".to_string())?;
-    node.insert_bundle("Message 2".to_string())?;
+    node.insert_bundle("Message 1".to_string()).await?;
+    node.insert_bundle("Message 2".to_string()).await?;
 
     let status = node.get_bundle_status(None)?;
     match status {
@@ -410,12 +410,12 @@ fn test_get_bundle_status_summary() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_cleanup_expired() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_cleanup_expired() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
-    node.insert_bundle("Test message".to_string())?;
+    node.insert_bundle("Test message".to_string()).await?;
 
     // Should not error even if no bundles are expired
     node.cleanup_expired()?;
@@ -425,21 +425,22 @@ fn test_cleanup_expired() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_routing_with_prophet_algorithm() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_routing_with_prophet_algorithm() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let routing_config = RoutingConfig::new(RoutingAlgorithmType::Prophet);
     let node = DtnNode::with_routing_algorithm(temp_dir.path().to_str().unwrap(), routing_config)?;
 
-    node.insert_bundle("Test message with Prophet".to_string())?;
+    node.insert_bundle("Test message with Prophet".to_string())
+        .await?;
 
     let bundles = node.list_bundles()?;
     assert_eq!(bundles.len(), 1);
     Ok(())
 }
 
-#[test]
-fn test_complex_routing_scenario() -> anyhow::Result<()> {
+#[tokio::test]
+async fn test_complex_routing_scenario() -> anyhow::Result<()> {
     let temp_dir = TempDir::new()?;
     let node = DtnNode::with_store_path(temp_dir.path().to_str().unwrap())?;
 
@@ -469,15 +470,16 @@ fn test_complex_routing_scenario() -> anyhow::Result<()> {
     })?;
 
     // Insert bundle and test routing
-    node.insert_bundle("Complex routing test".to_string())?;
+    node.insert_bundle("Complex routing test".to_string())
+        .await?;
 
     let bundles = node.list_bundles()?;
     let bundle_id = bundles.first().unwrap();
     let bundle = node.show_bundle(bundle_id)?;
 
     // Test route selection
-    let routes = node.select_routes_for_forwarding(&bundle)?;
-    assert_eq!(routes.len(), 3); // Epidemic should select all routes
+    let selected = node.select_routes_for_forwarding(&bundle).await?;
+    assert_eq!(selected.len(), 0); // Epidemic routing does not use routing table
 
     // Test best route finding
     let dest = EndpointId::from("dtn://dest");

@@ -1,25 +1,22 @@
 use crate::bpv7::EndpointId;
 use crate::store::bundle_descriptor::BundleDescriptor;
+use async_trait::async_trait;
 use std::collections::HashMap;
 
-pub trait ConvergenceSender {
+#[async_trait]
+pub trait ClaPeer: Send + Sync {
     fn get_peer_endpoint_id(&self) -> EndpointId;
-}
 
-pub struct TcpSender {
-    pub peer_id: EndpointId,
-}
+    /// Check if this peer is currently reachable/connectable
+    /// This method should be implemented by each CLA type to perform
+    /// appropriate connectivity checks (TCP ping, BLE scan, etc.)
+    async fn is_reachable(&self) -> bool;
 
-impl TcpSender {
-    pub fn new(peer_id: EndpointId) -> Self {
-        Self { peer_id }
-    }
-}
+    /// Get the CLA type for this peer (e.g., "tcp", "ble", "udp")
+    fn get_cla_type(&self) -> &str;
 
-impl ConvergenceSender for TcpSender {
-    fn get_peer_endpoint_id(&self) -> EndpointId {
-        self.peer_id.clone()
-    }
+    /// Get the connection address/identifier for this peer
+    fn get_connection_address(&self) -> String;
 }
 
 /// Represents a route entry in the routing table
@@ -27,7 +24,7 @@ impl ConvergenceSender for TcpSender {
 pub struct RouteEntry {
     pub destination: EndpointId,
     pub next_hop: EndpointId,
-    pub cla_type: String, // e.g., "tcp", "ble", "lora"
+    pub cla_type: String,
     pub cost: u32,
     pub is_active: bool,
 }
@@ -75,13 +72,24 @@ impl RoutingTable {
     }
 }
 
+#[async_trait]
 pub trait RoutingAlgorithm: Send + Sync {
     fn notify_new_bundle(&mut self, descriptor: &BundleDescriptor);
     fn select_peers_for_forwarding<'a>(
         &self,
         descriptor: &BundleDescriptor,
-        all_senders: &'a [Box<dyn ConvergenceSender>],
-    ) -> Vec<&'a dyn ConvergenceSender>;
+        all_peers: &'a [Box<dyn ClaPeer>],
+    ) -> Vec<&'a dyn ClaPeer>;
+
+    /// Async version that checks connectivity before selecting peers
+    async fn select_peers_for_forwarding_async<'a>(
+        &self,
+        descriptor: &BundleDescriptor,
+        all_peers: &'a [Box<dyn ClaPeer>],
+    ) -> Vec<&'a dyn ClaPeer> {
+        // Default implementation falls back to sync version
+        self.select_peers_for_forwarding(descriptor, all_peers)
+    }
 
     /// New method: select routes based on routing table
     fn select_routes_for_forwarding(

@@ -7,7 +7,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Insert a bundle
     println!("📦 Inserting a new bundle...");
-    node.insert_bundle("Hello from SpaceArth DTN!".to_string())?;
+    node.insert_bundle("Hello from SpaceArth DTN!".to_string())
+        .await?;
 
     // List all bundles
     println!("📋 Listing all bundles...");

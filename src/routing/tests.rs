@@ -1,21 +1,22 @@
 use crate::bpv7::bundle::Bundle;
 use crate::bpv7::EndpointId;
+use crate::cla::TcpPeer;
 use crate::routing::algorithm::*;
 use crate::routing::epidemic::EpidemicRouting;
 use crate::store::bundle_descriptor::BundleDescriptor;
 
 #[test]
-fn test_tcp_sender_new() {
+fn test_tcp_peer_new() {
     let eid = EndpointId::from("dtn://test");
-    let sender = TcpSender::new(eid.clone());
-    assert_eq!(sender.peer_id, eid);
+    let peer = TcpPeer::new(eid.clone(), "127.0.0.1:8080".to_string());
+    assert_eq!(peer.peer_id, eid);
 }
 
 #[test]
-fn test_tcp_sender_get_peer_endpoint_id() {
+fn test_tcp_peer_get_peer_endpoint_id() {
     let eid = EndpointId::from("dtn://test");
-    let sender = TcpSender::new(eid.clone());
-    assert_eq!(sender.get_peer_endpoint_id(), eid);
+    let peer = TcpPeer::new(eid.clone(), "127.0.0.1:8080".to_string());
+    assert_eq!(peer.get_peer_endpoint_id(), eid);
 }
 
 #[test]
@@ -220,10 +221,10 @@ fn test_routing_config_create_algorithm_epidemic() {
     // Test that we can create the algorithm
     let bundle = Bundle::new("dtn://src", "dtn://dest", b"test".to_vec());
     let descriptor = BundleDescriptor::new(bundle);
-    let senders: Vec<Box<dyn ConvergenceSender>> = vec![];
+    let peers: Vec<Box<dyn ClaPeer>> = vec![];
 
-    let selected = algorithm.select_peers_for_forwarding(&descriptor, &senders);
-    assert!(selected.is_empty()); // No senders provided
+    let selected = algorithm.select_peers_for_forwarding(&descriptor, &peers);
+    assert!(selected.is_empty()); // No peers provided
 }
 
 #[test]
@@ -234,10 +235,10 @@ fn test_routing_config_create_algorithm_prophet() {
     // Test that Prophet falls back to Epidemic
     let bundle = Bundle::new("dtn://src", "dtn://dest", b"test".to_vec());
     let descriptor = BundleDescriptor::new(bundle);
-    let senders: Vec<Box<dyn ConvergenceSender>> = vec![];
+    let peers: Vec<Box<dyn ClaPeer>> = vec![];
 
-    let selected = algorithm.select_peers_for_forwarding(&descriptor, &senders);
-    assert!(selected.is_empty()); // No senders provided
+    let selected = algorithm.select_peers_for_forwarding(&descriptor, &peers);
+    assert!(selected.is_empty()); // No peers provided
 }
 
 #[test]
@@ -268,13 +269,15 @@ fn test_select_peers_for_forwarding() {
     let bundle = Bundle::new("dtn://source", "dtn://dest", b"test".to_vec());
     let descriptor = BundleDescriptor::new(bundle);
 
-    let sender1: Box<dyn ConvergenceSender> =
-        Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer1")));
-    let sender2: Box<dyn ConvergenceSender> =
-        Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer2")));
+    let peer1: Box<dyn ClaPeer> = Box::new(TcpPeer::from_endpoint_id(
+        crate::bpv7::EndpointId::from("dtn://peer1"),
+    ));
+    let peer2: Box<dyn ClaPeer> = Box::new(TcpPeer::from_endpoint_id(
+        crate::bpv7::EndpointId::from("dtn://peer2"),
+    ));
 
-    let all_senders = vec![sender1, sender2];
-    let selected = routing.select_peers_for_forwarding(&descriptor, &all_senders);
+    let all_peers = vec![peer1, peer2];
+    let selected = routing.select_peers_for_forwarding(&descriptor, &all_peers);
 
     assert_eq!(selected.len(), 2);
 }
@@ -288,13 +291,15 @@ fn test_select_peers_for_forwarding_with_already_sent() {
     // Mark one peer as already sent
     descriptor.mark_sent(crate::bpv7::EndpointId::from("dtn://peer1"));
 
-    let sender1: Box<dyn ConvergenceSender> =
-        Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer1")));
-    let sender2: Box<dyn ConvergenceSender> =
-        Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer2")));
+    let peer1: Box<dyn ClaPeer> = Box::new(TcpPeer::from_endpoint_id(
+        crate::bpv7::EndpointId::from("dtn://peer1"),
+    ));
+    let peer2: Box<dyn ClaPeer> = Box::new(TcpPeer::from_endpoint_id(
+        crate::bpv7::EndpointId::from("dtn://peer2"),
+    ));
 
-    let all_senders = vec![sender1, sender2];
-    let selected = routing.select_peers_for_forwarding(&descriptor, &all_senders);
+    let all_peers = vec![peer1, peer2];
+    let selected = routing.select_peers_for_forwarding(&descriptor, &all_peers);
 
     assert_eq!(selected.len(), 1);
     assert_eq!(selected[0].get_peer_endpoint_id().as_str(), "dtn://peer2");
@@ -306,8 +311,8 @@ fn test_select_peers_for_forwarding_empty_senders() {
     let bundle = Bundle::new("dtn://source", "dtn://dest", b"test".to_vec());
     let descriptor = BundleDescriptor::new(bundle);
 
-    let all_senders: Vec<Box<dyn ConvergenceSender>> = vec![];
-    let selected = routing.select_peers_for_forwarding(&descriptor, &all_senders);
+    let all_peers: Vec<Box<dyn ClaPeer>> = vec![];
+    let selected = routing.select_peers_for_forwarding(&descriptor, &all_peers);
 
     assert_eq!(selected.len(), 0);
 }
@@ -319,15 +324,18 @@ fn test_select_peers_for_forwarding_duplicate_endpoints() {
     let descriptor = BundleDescriptor::new(bundle);
 
     // Create multiple senders with the same endpoint ID
-    let sender1: Box<dyn ConvergenceSender> =
-        Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer1")));
-    let sender2: Box<dyn ConvergenceSender> =
-        Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer1")));
-    let sender3: Box<dyn ConvergenceSender> =
-        Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer2")));
+    let peer1: Box<dyn ClaPeer> = Box::new(TcpPeer::from_endpoint_id(
+        crate::bpv7::EndpointId::from("dtn://peer1"),
+    ));
+    let peer2: Box<dyn ClaPeer> = Box::new(TcpPeer::from_endpoint_id(
+        crate::bpv7::EndpointId::from("dtn://peer1"),
+    ));
+    let peer3: Box<dyn ClaPeer> = Box::new(TcpPeer::from_endpoint_id(
+        crate::bpv7::EndpointId::from("dtn://peer2"),
+    ));
 
-    let all_senders = vec![sender1, sender2, sender3];
-    let selected = routing.select_peers_for_forwarding(&descriptor, &all_senders);
+    let all_peers = vec![peer1, peer2, peer3];
+    let selected = routing.select_peers_for_forwarding(&descriptor, &all_peers);
 
     // Should only select unique endpoints
     assert_eq!(selected.len(), 2);
@@ -369,7 +377,7 @@ fn test_select_routes_for_forwarding_with_routes() {
     });
 
     let selected = routing.select_routes_for_forwarding(&descriptor, &routing_table);
-    assert_eq!(selected.len(), 2); // Epidemic routing forwards to all available routes
+    assert_eq!(selected.len(), 0); // Epidemic routing does not use routing table
 }
 
 #[test]
@@ -400,8 +408,7 @@ fn test_select_routes_for_forwarding_with_already_sent() {
     });
 
     let selected = routing.select_routes_for_forwarding(&descriptor, &routing_table);
-    assert_eq!(selected.len(), 1); // Should exclude already sent route
-    assert_eq!(selected[0].next_hop.as_str(), "dtn://router2");
+    assert_eq!(selected.len(), 0); // Epidemic routing does not use routing table
 }
 
 #[test]
@@ -421,7 +428,7 @@ fn test_select_routes_for_forwarding_inactive_routes() {
     });
 
     let selected = routing.select_routes_for_forwarding(&descriptor, &routing_table);
-    assert_eq!(selected.len(), 0); // Inactive routes should not be selected
+    assert_eq!(selected.len(), 0); // Epidemic routing does not use routing table
 }
 
 #[test]
@@ -449,6 +456,5 @@ fn test_select_routes_for_forwarding_duplicate_next_hops() {
     });
 
     let selected = routing.select_routes_for_forwarding(&descriptor, &routing_table);
-    assert_eq!(selected.len(), 1); // Should only select unique next hops
-    assert_eq!(selected[0].next_hop.as_str(), "dtn://router1");
+    assert_eq!(selected.len(), 0); // Epidemic routing does not use routing table
 }

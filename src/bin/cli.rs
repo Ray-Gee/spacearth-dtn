@@ -84,9 +84,9 @@ pub enum RouteCmd {
 }
 
 // Split command handling into separate functions for better testability
-pub fn handle_insert_command(node: &DtnNode, message: String) -> anyhow::Result<()> {
+pub async fn handle_insert_command(node: &DtnNode, message: String) -> anyhow::Result<()> {
     println!("📦 Inserting bundle: {}", message);
-    node.insert_bundle(message)?;
+    node.insert_bundle(message).await?;
     println!("✅ Bundle inserted successfully!");
     Ok(())
 }
@@ -162,13 +162,13 @@ pub fn handle_cleanup_command(node: &DtnNode) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn handle_route_test_command(node: &DtnNode, id: String) -> anyhow::Result<()> {
+pub async fn handle_route_test_command(node: &DtnNode, id: String) -> anyhow::Result<()> {
     let bundle = node.show_bundle(&id)?;
     println!("🧭 Testing routing for bundle: {}", id);
     println!("  Source: {}", bundle.primary.source);
     println!("  Destination: {}", bundle.primary.destination);
 
-    match node.select_peers_for_forwarding(&bundle) {
+    match node.select_peers_for_forwarding(&bundle).await {
         Ok(peers) => {
             println!("  Selected {} peers for forwarding:", peers.len());
             for (i, peer) in peers.iter().enumerate() {
@@ -253,14 +253,14 @@ pub fn handle_route_add_command(
     Ok(())
 }
 
-pub fn handle_route_test_table_command(node: &DtnNode, id: String) -> anyhow::Result<()> {
+pub async fn handle_route_test_table_command(node: &DtnNode, id: String) -> anyhow::Result<()> {
     let bundle = node.show_bundle(&id)?;
     println!("🧭 Testing routing table for bundle: {}", id);
     println!("  Source: {}", bundle.primary.source);
     println!("  Destination: {}", bundle.primary.destination);
 
     // Test routing with routing table
-    match node.select_routes_for_forwarding(&bundle) {
+    match node.select_routes_for_forwarding(&bundle).await {
         Ok(routes) => {
             println!("  Selected {} routes for forwarding:", routes.len());
             for (i, route) in routes.iter().enumerate() {
@@ -319,9 +319,9 @@ pub async fn handle_daemon_dialer_command(node: &DtnNode, addr: String) -> anyho
     Ok(())
 }
 
-pub fn execute_command(node: &DtnNode, cmd: Command) -> anyhow::Result<()> {
+pub async fn execute_command(node: &DtnNode, cmd: Command) -> anyhow::Result<()> {
     match cmd {
-        Command::Insert { message } => handle_insert_command(node, message),
+        Command::Insert { message } => handle_insert_command(node, message).await,
         Command::List => handle_list_command(node),
         Command::Show { id } => handle_show_command(node, id),
         Command::Status { id } => handle_status_command(node, id),
@@ -342,7 +342,7 @@ pub fn execute_command(node: &DtnNode, cmd: Command) -> anyhow::Result<()> {
         },
         Command::Cleanup => handle_cleanup_command(node),
         Command::Route { cmd } => match cmd {
-            RouteCmd::Test { id } => handle_route_test_command(node, id),
+            RouteCmd::Test { id } => handle_route_test_command(node, id).await,
             RouteCmd::Show => handle_route_show_command(),
             RouteCmd::Set { algorithm } => handle_route_set_command(algorithm),
             RouteCmd::Table => handle_route_table_command(node),
@@ -352,7 +352,7 @@ pub fn execute_command(node: &DtnNode, cmd: Command) -> anyhow::Result<()> {
                 cla_type,
                 cost,
             } => handle_route_add_command(node, destination, next_hop, cla_type, cost),
-            RouteCmd::TestTable { id } => handle_route_test_table_command(node, id),
+            RouteCmd::TestTable { id } => handle_route_test_table_command(node, id).await,
         },
     }
 }
@@ -361,5 +361,5 @@ fn main() -> anyhow::Result<()> {
     env_logger::init();
     let opts = Opts::parse();
     let node = DtnNode::new()?;
-    execute_command(&node, opts.cmd)
+    tokio::runtime::Runtime::new()?.block_on(async { execute_command(&node, opts.cmd).await })
 }

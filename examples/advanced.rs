@@ -1,3 +1,4 @@
+use sdtn::consts::BUNDLES_ADVANCED_DIR;
 use sdtn::{convenience, BundleStatus, DtnNode};
 
 #[tokio::main]
@@ -18,13 +19,15 @@ async fn main() -> anyhow::Result<()> {
 
     for (i, msg) in messages.iter().enumerate() {
         println!("  Inserting bundle {}: {}", i + 1, msg);
-        node.insert_bundle(msg.to_string())?;
+        node.insert_bundle(msg.to_string()).await?;
     }
 
     // Method 1b: Using DtnNode API with custom store path
     println!("\n📋 Method 1b: Using DtnNode API (custom store path)");
-    let custom_node = DtnNode::with_store_path("./advanced_bundles")?;
-    custom_node.insert_bundle("Message in custom store".to_string())?;
+    let custom_node = DtnNode::with_store_path(BUNDLES_ADVANCED_DIR)?;
+    custom_node
+        .insert_bundle("Message in custom store".to_string())
+        .await?;
 
     // Get detailed status for a specific bundle
     let bundles = node.list_bundles()?;
@@ -49,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
     println!("\n📋 Method 2: Using convenience functions");
 
     // Quick insert
-    convenience::insert_bundle_quick("Quick message from convenience function")?;
+    convenience::insert_bundle_quick("Quick message from convenience function").await?;
 
     // Quick list
     let quick_bundles = convenience::list_bundles_quick()?;
@@ -123,7 +126,9 @@ async fn main() -> anyhow::Result<()> {
     // Method 5: Using Default trait
     println!("\n📋 Method 5: Using Default trait");
     let default_node = DtnNode::default();
-    default_node.insert_bundle("Message from default instance".to_string())?;
+    default_node
+        .insert_bundle("Message from default instance".to_string())
+        .await?;
 
     println!("\n✅ Advanced usage example completed successfully!");
     Ok(())

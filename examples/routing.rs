@@ -1,3 +1,4 @@
+use sdtn::consts::BUNDLES_CUSTOM_ROUTING_DIR;
 use sdtn::routing::algorithm::{RouteEntry, RoutingAlgorithmType, RoutingConfig};
 use sdtn::{bpv7::EndpointId, DtnNode};
 
@@ -51,7 +52,8 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Insert a test bundle
-    node.insert_bundle("Test message for real routing".to_string())?;
+    node.insert_bundle("Test message for real routing".to_string())
+        .await?;
 
     // Get the bundle and test routing
     let bundles = node.list_bundles()?;
@@ -61,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
         println!("  Destination: {}", bundle.primary.destination);
 
         // Test the new routing method using routing table
-        match node.select_routes_for_forwarding(&bundle) {
+        match node.select_routes_for_forwarding(&bundle).await {
             Ok(routes) => {
                 println!("  Selected {} routes for forwarding:", routes.len());
                 for (i, route) in routes.iter().enumerate() {
@@ -102,7 +104,7 @@ async fn main() -> anyhow::Result<()> {
     // Method 2: Using custom routing algorithm with routing table
     println!("\n📋 Method 2: Using Prophet routing with routing table");
     let routing_config = RoutingConfig::new(RoutingAlgorithmType::Prophet);
-    let custom_node = DtnNode::with_routing_algorithm("./custom_routing_bundles", routing_config)?;
+    let custom_node = DtnNode::with_routing_algorithm(BUNDLES_CUSTOM_ROUTING_DIR, routing_config)?;
 
     // Add routes to custom node
     custom_node.add_route(RouteEntry {
@@ -122,7 +124,9 @@ async fn main() -> anyhow::Result<()> {
     })?;
 
     // Insert a test bundle with custom routing
-    custom_node.insert_bundle("Message with Prophet routing".to_string())?;
+    custom_node
+        .insert_bundle("Message with Prophet routing".to_string())
+        .await?;
 
     // Test routing with custom algorithm
     let bundles = custom_node.list_bundles()?;
@@ -130,7 +134,7 @@ async fn main() -> anyhow::Result<()> {
         let bundle = custom_node.show_bundle(id)?;
         println!("  Testing Prophet routing for bundle: {}", id);
 
-        match custom_node.select_routes_for_forwarding(&bundle) {
+        match custom_node.select_routes_for_forwarding(&bundle).await {
             Ok(routes) => {
                 println!("  Selected {} routes for forwarding:", routes.len());
                 for (i, route) in routes.iter().enumerate() {

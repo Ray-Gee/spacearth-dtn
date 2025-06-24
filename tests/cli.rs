@@ -1,3 +1,4 @@
+use sdtn::consts::BUNDLES_DIR;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -6,8 +7,6 @@ use std::sync::Once;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 static COMPILE_ONCE: Once = Once::new();
-
-const BUNDLE_DIR: &str = "./bundles";
 
 // Helper function to run CLI commands
 fn run_cli(args: &[&str]) -> String {
@@ -19,7 +18,7 @@ fn run_cli(args: &[&str]) -> String {
     });
 
     let output = Command::new("./target/debug/sdtn")
-        .env("SDTN_BUNDLE_PATH", BUNDLE_DIR)
+        .env("SDTN_BUNDLE_PATH", BUNDLES_DIR)
         .args(args)
         .output()
         .expect("Failed to execute command");
@@ -41,10 +40,10 @@ fn get_unique_payload(base: &str) -> String {
 
 // Setup and teardown for each test
 fn setup() {
-    if Path::new(BUNDLE_DIR).exists() {
-        let _ = fs::remove_dir_all(BUNDLE_DIR);
+    if Path::new(BUNDLES_DIR).exists() {
+        let _ = fs::remove_dir_all(BUNDLES_DIR);
     }
-    let _ = fs::create_dir_all(BUNDLE_DIR);
+    let _ = fs::create_dir_all(BUNDLES_DIR);
 }
 
 #[test]

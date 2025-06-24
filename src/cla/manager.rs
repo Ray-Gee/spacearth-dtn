@@ -1,4 +1,7 @@
 use crate::bpv7::bundle::Bundle;
+use crate::bpv7::EndpointId;
+use crate::cla::TcpPeer;
+use crate::routing::algorithm::ClaPeer;
 use async_trait::async_trait;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -62,6 +65,20 @@ impl ClaManager {
     pub async fn list_active(&self) -> Vec<String> {
         let st = self.state.read().await;
         st.active_clas.iter().cloned().collect()
+    }
+
+    pub async fn list_peers(&self) -> Vec<Box<dyn ClaPeer>> {
+        // Dummy implementation: return two TCP peers
+        vec![
+            Box::new(TcpPeer::new(
+                EndpointId::from("dtn://peer1"),
+                "127.0.0.1:8080".to_string(),
+            )),
+            Box::new(TcpPeer::new(
+                EndpointId::from("dtn://peer2"),
+                "127.0.0.1:8081".to_string(),
+            )),
+        ]
     }
 }
 

@@ -1,15 +1,90 @@
+use crate::bpv7::EndpointId;
 use crate::consts::{BUNDLES_DIR, DISPATCHED_DIR};
+use crate::routing::algorithm::ClaPeer;
 use crate::store::file::BundleStore;
 use crate::{bpv7::bundle::Bundle, cla::ConvergenceLayer};
 use anyhow::Result;
+use async_trait::async_trait;
 use tokio::net::TcpStream;
 
-pub struct TcpClaDialer {
+pub struct TcpClaClient {
     pub target_addr: String,
 }
 
+/// TCP-specific implementation of ClaPeer for routing
+pub struct TcpPeer {
+    pub peer_id: EndpointId,
+    pub address: String,
+}
+
+impl TcpPeer {
+    pub fn new(peer_id: EndpointId, address: String) -> Self {
+        Self { peer_id, address }
+    }
+
+    /// Create TcpPeer from endpoint ID (assumes endpoint ID is the address)
+    pub fn from_endpoint_id(peer_id: EndpointId) -> Self {
+        let address = peer_id.as_str().to_string();
+        Self { peer_id, address }
+    }
+
+    /// Create TcpPeer for testing (uses endpoint ID as address)
+    #[cfg(test)]
+    pub fn for_test(peer_id: EndpointId) -> Self {
+        Self::from_endpoint_id(peer_id)
+    }
+}
+
+#[async_trait]
+impl ClaPeer for TcpPeer {
+    fn get_peer_endpoint_id(&self) -> EndpointId {
+        self.peer_id.clone()
+    }
+
+    async fn is_reachable(&self) -> bool {
+        // Try to establish a TCP connection to check reachability
+        // Use a short timeout to avoid blocking too long
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            TcpStream::connect(&self.address),
+        )
+        .await
+        {
+            Ok(Ok(_stream)) => {
+                println!(
+                    "✅ TCP peer {} ({}) is reachable",
+                    self.peer_id, self.address
+                );
+                true
+            }
+            Ok(Err(e)) => {
+                println!(
+                    "❌ TCP peer {} ({}) connection failed: {}",
+                    self.peer_id, self.address, e
+                );
+                false
+            }
+            Err(_) => {
+                println!(
+                    "❌ TCP peer {} ({}) connection timed out",
+                    self.peer_id, self.address
+                );
+                false
+            }
+        }
+    }
+
+    fn get_cla_type(&self) -> &str {
+        "tcp"
+    }
+
+    fn get_connection_address(&self) -> String {
+        self.address.clone()
+    }
+}
+
 #[async_trait::async_trait]
-impl ConvergenceLayer for TcpClaDialer {
+impl ConvergenceLayer for TcpClaClient {
     fn address(&self) -> String {
         self.target_addr.clone()
     }

@@ -1,12 +1,15 @@
 use crate::bpv7::bundle::*;
 use crate::cla::manager::ClaManager;
+use crate::cla::TcpPeer;
 use crate::config::{generate_creation_timestamp, Config};
+use crate::consts::BUNDLES_DIR;
 use crate::routing::algorithm::{
-    ConvergenceSender, RouteEntry, RoutingAlgorithm, RoutingConfig, RoutingTable, TcpSender,
+    ClaPeer, RouteEntry, RoutingAlgorithm, RoutingConfig, RoutingTable,
 };
 use crate::store::bundle_descriptor::BundleDescriptor;
 use crate::store::BundleStore;
 use std::sync::{Arc, Mutex};
+use tokio::sync::Mutex as TokioMutex;
 
 use super::BundleStatus;
 
@@ -14,8 +17,9 @@ use super::BundleStatus;
 pub struct DtnNode {
     store: BundleStore,
     store_path: String,
-    routing_algorithm: Arc<Mutex<Box<dyn RoutingAlgorithm>>>,
+    routing_algorithm: Arc<TokioMutex<Box<dyn RoutingAlgorithm>>>,
     routing_table: Arc<Mutex<RoutingTable>>,
+    cla_manager: Arc<ClaManager>,
 }
 
 impl DtnNode {
@@ -26,7 +30,7 @@ impl DtnNode {
             Ok(path) => path,
             Err(_) => match Config::load() {
                 Ok(config) => config.storage.path,
-                Err(_) => "./bundles".to_string(),
+                Err(_) => BUNDLES_DIR.to_string(),
             },
         };
 
@@ -38,20 +42,22 @@ impl DtnNode {
         let store = BundleStore::new(store_path)?;
         let config = Config::load()?;
         let routing_config = RoutingConfig::new(config.get_routing_algorithm_type());
-        let routing_algorithm = Arc::new(Mutex::new(routing_config.create_algorithm()));
+        let routing_algorithm = Arc::new(TokioMutex::new(routing_config.create_algorithm()));
         let routing_table = Arc::new(Mutex::new(RoutingTable::new()));
+        let cla_manager = Arc::new(ClaManager::new(|_bundle| {}));
 
         Ok(Self {
             store,
             store_path: store_path.to_string(),
             routing_algorithm,
             routing_table,
+            cla_manager,
         })
     }
 
     /// Create a new DTN CLI instance with custom configuration
     pub fn with_config(store_path: Option<&str>) -> anyhow::Result<Self> {
-        let path = store_path.unwrap_or("./bundles");
+        let path = store_path.unwrap_or(BUNDLES_DIR);
         Self::with_store_path(path)
     }
 
@@ -61,14 +67,16 @@ impl DtnNode {
         routing_config: RoutingConfig,
     ) -> anyhow::Result<Self> {
         let store = BundleStore::new(store_path)?;
-        let routing_algorithm = Arc::new(Mutex::new(routing_config.create_algorithm()));
+        let routing_algorithm = Arc::new(TokioMutex::new(routing_config.create_algorithm()));
         let routing_table = Arc::new(Mutex::new(RoutingTable::new()));
+        let cla_manager = Arc::new(ClaManager::new(|_bundle| {}));
 
         Ok(Self {
             store,
             store_path: store_path.to_string(),
             routing_algorithm,
             routing_table,
+            cla_manager,
         })
     }
 
@@ -80,6 +88,11 @@ impl DtnNode {
         } else {
             anyhow::bail!("Failed to lock routing table")
         }
+    }
+
+    /// Get access to the routing table for advanced operations
+    pub fn get_routing_table(&self) -> Arc<Mutex<RoutingTable>> {
+        Arc::clone(&self.routing_table)
     }
 
     /// Get all routes from the routing table
@@ -104,7 +117,7 @@ impl DtnNode {
     }
 
     /// Insert a new bundle with the given message
-    pub fn insert_bundle(&self, message: String) -> anyhow::Result<()> {
+    pub async fn insert_bundle(&self, message: String) -> anyhow::Result<()> {
         #[cfg(test)]
         let config = {
             // In tests, use a slightly different timestamp each time to avoid duplicates
@@ -130,58 +143,51 @@ impl DtnNode {
 
         // Notify routing algorithm about new bundle
         let descriptor = BundleDescriptor::new(bundle);
-        if let Ok(mut algorithm) = self.routing_algorithm.lock() {
-            algorithm.notify_new_bundle(&descriptor);
-        }
+        let mut algorithm = self.routing_algorithm.lock().await;
+        algorithm.notify_new_bundle(&descriptor);
 
         Ok(())
     }
 
     /// Select peers for forwarding a bundle (legacy method)
-    pub fn select_peers_for_forwarding(
+    pub async fn select_peers_for_forwarding(
         &self,
         bundle: &Bundle,
-    ) -> anyhow::Result<Vec<Box<dyn ConvergenceSender>>> {
+    ) -> anyhow::Result<Vec<Box<dyn ClaPeer>>> {
         let descriptor = BundleDescriptor::new(bundle.clone());
 
-        // For now, create some dummy senders for demonstration
-        // In a real implementation, this would come from the CLA manager
-        let senders: Vec<Box<dyn ConvergenceSender>> = vec![
-            Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer1"))),
-            Box::new(TcpSender::new(crate::bpv7::EndpointId::from("dtn://peer2"))),
-        ];
+        // Get peers from CLA manager (dummy for now)
+        let peers = self.cla_manager.list_peers().await;
 
-        if let Ok(algorithm) = self.routing_algorithm.lock() {
-            let selected_refs = algorithm.select_peers_for_forwarding(&descriptor, &senders);
+        let algorithm = self.routing_algorithm.lock().await;
+        let selected_refs = algorithm.select_peers_for_forwarding(&descriptor, &peers);
 
-            // Convert references back to owned boxes (this is a bit awkward, but necessary for the trait)
-            let result = selected_refs
-                .into_iter()
-                .map(|sender_ref| {
-                    let eid = sender_ref.get_peer_endpoint_id();
-                    Box::new(TcpSender::new(eid)) as Box<dyn ConvergenceSender>
-                })
-                .collect();
+        // Convert references back to owned boxes (this is a bit awkward, but necessary for the trait)
+        let result = selected_refs
+            .into_iter()
+            .map(|peer_ref| {
+                let eid = peer_ref.get_peer_endpoint_id();
+                let address = peer_ref.get_connection_address();
+                Box::new(TcpPeer::new(eid, address)) as Box<dyn ClaPeer>
+            })
+            .collect();
 
-            Ok(result)
-        } else {
-            anyhow::bail!("Failed to lock routing algorithm")
-        }
+        Ok(result)
     }
 
     /// Select routes for forwarding a bundle (new method using routing table)
-    pub fn select_routes_for_forwarding(&self, bundle: &Bundle) -> anyhow::Result<Vec<RouteEntry>> {
+    pub async fn select_routes_for_forwarding(
+        &self,
+        bundle: &Bundle,
+    ) -> anyhow::Result<Vec<RouteEntry>> {
         let descriptor = BundleDescriptor::new(bundle.clone());
 
-        if let Ok(algorithm) = self.routing_algorithm.lock() {
-            if let Ok(table) = self.routing_table.lock() {
-                let routes = algorithm.select_routes_for_forwarding(&descriptor, &table);
-                Ok(routes)
-            } else {
-                anyhow::bail!("Failed to lock routing table")
-            }
+        let algorithm = self.routing_algorithm.lock().await;
+        if let Ok(table) = self.routing_table.lock() {
+            let routes = algorithm.select_routes_for_forwarding(&descriptor, &table);
+            Ok(routes)
         } else {
-            anyhow::bail!("Failed to lock routing algorithm")
+            anyhow::bail!("Failed to lock routing table")
         }
     }
 
@@ -261,7 +267,7 @@ impl DtnNode {
 
     /// Start a TCP dialer daemon
     pub async fn start_tcp_dialer(&self, target_addr: String) -> anyhow::Result<()> {
-        let cla = Arc::new(crate::cla::TcpClaDialer { target_addr });
+        let cla = Arc::new(crate::cla::TcpClaClient { target_addr });
         let manager = ClaManager::new(|bundle| {
             println!("📤 Should not receive here (Dialer): {:?}", bundle);
         });
@@ -269,6 +275,34 @@ impl DtnNode {
         manager.register(cla).await;
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         Ok(())
+    }
+
+    /// Select peers for forwarding a bundle with connectivity check (async version)
+    pub async fn select_peers_for_forwarding_async(
+        &self,
+        bundle: &Bundle,
+    ) -> anyhow::Result<Vec<Box<dyn ClaPeer>>> {
+        let descriptor = BundleDescriptor::new(bundle.clone());
+
+        // Get peers from CLA manager (dummy for now)
+        let peers = self.cla_manager.list_peers().await;
+
+        let algorithm = self.routing_algorithm.lock().await;
+        let selected_refs = algorithm
+            .select_peers_for_forwarding_async(&descriptor, &peers)
+            .await;
+
+        // Convert references back to owned boxes
+        let result = selected_refs
+            .into_iter()
+            .map(|peer_ref| {
+                let eid = peer_ref.get_peer_endpoint_id();
+                let address = peer_ref.get_connection_address();
+                Box::new(TcpPeer::new(eid, address)) as Box<dyn ClaPeer>
+            })
+            .collect();
+
+        Ok(result)
     }
 }
 

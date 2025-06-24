@@ -24,7 +24,7 @@ fn test_module_exports_exist() {
     let _convergence_layer_type = std::any::TypeId::of::<dyn ConvergenceLayer>();
 
     // Check that we can reference the TCP types
-    let _dialer_type = std::any::TypeId::of::<TcpClaDialer>();
+    let _dialer_type = std::any::TypeId::of::<TcpClaClient>();
     let _listener_type = std::any::TypeId::of::<TcpClaListener>();
 }
 
@@ -38,11 +38,10 @@ fn test_modules_are_accessible() {
 
     // These imports should work if modules are public
     use crate::cla::manager::ClaManager;
-    use crate::cla::tcp::client::TcpClaDialer;
     use crate::cla::tcp::server::TcpClaListener;
 
     let _ = std::any::TypeId::of::<ClaManager>();
-    let _ = std::any::TypeId::of::<TcpClaDialer>();
+    let _ = std::any::TypeId::of::<TcpClaClient>();
     let _ = std::any::TypeId::of::<TcpClaListener>();
 }
 
@@ -55,8 +54,8 @@ fn test_reexports_work() {
     );
 
     assert_eq!(
-        std::any::TypeId::of::<TcpClaDialer>(),
-        std::any::TypeId::of::<crate::cla::tcp::client::TcpClaDialer>()
+        std::any::TypeId::of::<TcpClaClient>(),
+        std::any::TypeId::of::<crate::cla::tcp::client::TcpClaClient>()
     );
 
     assert_eq!(
@@ -368,7 +367,7 @@ async fn test_mock_cla_activation_failure() {
 
 #[test]
 fn test_tcp_cla_dialer_new() {
-    let dialer = TcpClaDialer {
+    let dialer = TcpClaClient {
         target_addr: "127.0.0.1:8080".to_string(),
     };
     assert_eq!(dialer.target_addr, "127.0.0.1:8080");
@@ -376,7 +375,7 @@ fn test_tcp_cla_dialer_new() {
 
 #[test]
 fn test_tcp_cla_dialer_address() {
-    let dialer = TcpClaDialer {
+    let dialer = TcpClaClient {
         target_addr: "localhost:9090".to_string(),
     };
     assert_eq!(dialer.address(), "localhost:9090");
@@ -539,7 +538,7 @@ async fn test_send_bundle_serialization() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_tcp_cla_dialer_activate_no_server() {
-    let dialer = TcpClaDialer {
+    let dialer = TcpClaClient {
         target_addr: "127.0.0.1:19999".to_string(), // Non-existent server
     };
 
@@ -561,7 +560,7 @@ async fn test_tcp_cla_dialer_activate_with_empty_store() -> anyhow::Result<()> {
     let _temp_bundles_dir = temp_dir.path().join("test_bundles");
 
     // Test with custom bundles directory
-    let _dialer = TcpClaDialer {
+    let _dialer = TcpClaClient {
         target_addr: format!("127.0.0.1:{}", port),
     };
 

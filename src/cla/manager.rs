@@ -1,9 +1,6 @@
 use crate::bpv7::bundle::Bundle;
-use crate::bpv7::EndpointId;
-use crate::cla::TcpPeer;
-use crate::routing::algorithm::ClaPeer;
+use crate::cla::peer::ClaPeer;
 use async_trait::async_trait;
-use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -21,9 +18,9 @@ pub struct ClaManager {
     receive_callback: Arc<dyn Fn(Bundle) + Send + Sync>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 struct ClaState {
-    active_clas: HashSet<String>,
+    peers: Vec<Box<dyn ClaPeer>>,
 }
 
 impl ClaManager {
@@ -37,22 +34,22 @@ impl ClaManager {
         }
     }
 
-    pub async fn register(&self, cla: Arc<dyn ConvergenceLayer>) {
-        let address = cla.address();
+    /// Register a new peer (Box<dyn ClaPeer>)
+    pub async fn register_peer(&self, peer: Box<dyn ClaPeer>) {
+        let mut state = self.state.write().await;
+        let peer_id = peer.get_peer_endpoint_id();
+        if state
+            .peers
+            .iter()
+            .any(|p| p.get_peer_endpoint_id() == peer_id)
         {
-            let mut state = self.state.write().await;
-            if !state.active_clas.insert(address.clone()) {
-                println!("CLA already registered: {}", address);
-                return;
-            }
+            println!("Peer already registered: {}", peer_id);
+            return;
         }
-
-        tokio::spawn(async move {
-            match cla.activate().await {
-                Ok(()) => println!("CLA activated: {address}"),
-                Err(e) => eprintln!("Failed to activate CLA ({address}): {e:?}"),
-            }
-        });
+        if let Err(e) = peer.activate().await {
+            println!("Failed to activate peer {}: {}", peer_id, e);
+        }
+        state.peers.push(peer);
     }
 
     pub fn notify_receive(&self, bundle: Bundle) {
@@ -62,23 +59,27 @@ impl ClaManager {
         });
     }
 
-    pub async fn list_active(&self) -> Vec<String> {
+    /// List all registered peers (regardless of reachability)
+    pub async fn list_all_peers(&self) -> Vec<Box<dyn ClaPeer>> {
         let st = self.state.read().await;
-        st.active_clas.iter().cloned().collect()
+        st.peers.iter().map(|p| p.clone_box()).collect()
     }
 
+    /// List only reachable peers (filtered by is_reachable())
+    pub async fn list_reachable_peers(&self) -> Vec<Box<dyn ClaPeer>> {
+        let st = self.state.read().await;
+        let mut reachable = Vec::new();
+        for peer in &st.peers {
+            if peer.is_reachable().await {
+                reachable.push(peer.clone_box());
+            }
+        }
+        reachable
+    }
+
+    /// Alias for list_reachable_peers (backward compatibility)
     pub async fn list_peers(&self) -> Vec<Box<dyn ClaPeer>> {
-        // Dummy implementation: return two TCP peers
-        vec![
-            Box::new(TcpPeer::new(
-                EndpointId::from("dtn://peer1"),
-                "127.0.0.1:8080".to_string(),
-            )),
-            Box::new(TcpPeer::new(
-                EndpointId::from("dtn://peer2"),
-                "127.0.0.1:8081".to_string(),
-            )),
-        ]
+        self.list_reachable_peers().await
     }
 }
 

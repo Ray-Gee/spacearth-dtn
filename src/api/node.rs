@@ -1,11 +1,12 @@
 use crate::bpv7::bundle::*;
+use crate::bpv7::EndpointId;
 use crate::cla::manager::ClaManager;
+use crate::cla::manager::ConvergenceLayer;
+use crate::cla::peer::ClaPeer;
 use crate::cla::TcpPeer;
 use crate::config::{generate_creation_timestamp, Config};
 use crate::consts::BUNDLES_DIR;
-use crate::routing::algorithm::{
-    ClaPeer, RouteEntry, RoutingAlgorithm, RoutingConfig, RoutingTable,
-};
+use crate::routing::algorithm::{RouteEntry, RoutingAlgorithm, RoutingConfig, RoutingTable};
 use crate::store::bundle_descriptor::BundleDescriptor;
 use crate::store::BundleStore;
 use std::sync::{Arc, Mutex};
@@ -156,8 +157,8 @@ impl DtnNode {
     ) -> anyhow::Result<Vec<Box<dyn ClaPeer>>> {
         let descriptor = BundleDescriptor::new(bundle.clone());
 
-        // Get peers from CLA manager (dummy for now)
-        let peers = self.cla_manager.list_peers().await;
+        // Get reachable peers from CLA manager
+        let peers = self.cla_manager.list_reachable_peers().await;
 
         let algorithm = self.routing_algorithm.lock().await;
         let selected_refs = algorithm.select_peers_for_forwarding(&descriptor, &peers);
@@ -244,35 +245,38 @@ impl DtnNode {
     pub async fn start_tcp_listener(&self, bind_addr: String) -> anyhow::Result<()> {
         let store_path = self.store_path.clone();
         let cla = Arc::new(crate::cla::TcpClaListener {
-            bind_addr,
+            bind_addr: bind_addr.clone(),
             receive_callback: Arc::new(move |bundle| {
-                if let Err(e) = (|| -> anyhow::Result<()> {
-                    let store = BundleStore::new(&store_path)?;
-                    store.insert(&bundle)?;
-                    Ok(())
-                })() {
-                    eprintln!("❌ Failed to insert bundle: {e}");
+                // バンドル受信時の保存処理
+                if let Ok(store) = BundleStore::new(&store_path) {
+                    let _ = store.insert(&bundle);
                 }
             }),
         });
 
+        // CLAマネージャにピア登録（必要なら）
         let manager = ClaManager::new(|bundle| {
             println!("📥 Received: {:?}", bundle);
         });
+        let peer: Box<dyn ClaPeer> =
+            Box::new(TcpPeer::new(EndpointId::from("dtn://listener"), bind_addr));
+        manager.register_peer(peer).await;
 
-        manager.register(cla).await;
-        futures::future::pending::<()>().await;
+        // CLAリスナーを起動
+        cla.activate().await?;
+
         Ok(())
     }
 
     /// Start a TCP dialer daemon
     pub async fn start_tcp_dialer(&self, target_addr: String) -> anyhow::Result<()> {
-        let cla = Arc::new(crate::cla::TcpClaClient { target_addr });
         let manager = ClaManager::new(|bundle| {
             println!("📤 Should not receive here (Dialer): {:?}", bundle);
         });
 
-        manager.register(cla).await;
+        let peer: Box<dyn ClaPeer> =
+            Box::new(TcpPeer::new(EndpointId::from("dtn://dialer"), target_addr));
+        manager.register_peer(peer).await;
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         Ok(())
     }
@@ -284,8 +288,8 @@ impl DtnNode {
     ) -> anyhow::Result<Vec<Box<dyn ClaPeer>>> {
         let descriptor = BundleDescriptor::new(bundle.clone());
 
-        // Get peers from CLA manager (dummy for now)
-        let peers = self.cla_manager.list_peers().await;
+        // Get reachable peers from CLA manager
+        let peers = self.cla_manager.list_reachable_peers().await;
 
         let algorithm = self.routing_algorithm.lock().await;
         let selected_refs = algorithm

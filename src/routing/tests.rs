@@ -1,7 +1,10 @@
 use crate::bpv7::bundle::Bundle;
 use crate::bpv7::EndpointId;
+use crate::cla::peer::ClaPeer;
 use crate::cla::TcpPeer;
-use crate::routing::algorithm::*;
+use crate::routing::algorithm::{
+    RouteEntry, RoutingAlgorithm, RoutingAlgorithmType, RoutingConfig, RoutingTable,
+};
 use crate::routing::epidemic::EpidemicRouting;
 use crate::store::bundle_descriptor::BundleDescriptor;
 
@@ -462,9 +465,10 @@ fn test_select_routes_for_forwarding_duplicate_next_hops() {
 #[tokio::test]
 async fn routing_test_select_peers_for_forwarding_async() {
     use crate::bpv7::EndpointId;
-    use crate::routing::algorithm::ClaPeer;
+    use crate::cla::ClaPeer;
     use async_trait::async_trait;
 
+    #[derive(Clone)]
     struct DummyPeer {
         eid: EndpointId,
         reachable: bool,
@@ -483,6 +487,12 @@ async fn routing_test_select_peers_for_forwarding_async() {
         }
         async fn is_reachable(&self) -> bool {
             self.reachable
+        }
+        fn clone_box(&self) -> Box<dyn ClaPeer> {
+            Box::new(self.clone())
+        }
+        async fn activate(&self) -> anyhow::Result<()> {
+            Ok(())
         }
     }
 

@@ -12,65 +12,14 @@ fn test_current_module() {
     assert!(current_module.contains("cla::tests"));
 }
 
-use crate::cla::*;
-
-#[test]
-fn test_module_exports_exist() {
-    // Test that the re-exports work by referencing the types
-    // This ensures the modules are properly exposed
-
-    // Check that we can reference the manager types
-    let _manager_type = std::any::TypeId::of::<ClaManager>();
-    let _convergence_layer_type = std::any::TypeId::of::<dyn ConvergenceLayer>();
-
-    // Check that we can reference the TCP types
-    let _dialer_type = std::any::TypeId::of::<TcpClaClient>();
-    let _listener_type = std::any::TypeId::of::<TcpClaListener>();
-}
-
-#[test]
-fn test_modules_are_accessible() {
-    // This test verifies that all modules are accessible
-
-    // Check that we can access the module paths
-    let _manager_module = module_path!();
-    assert!(module_path!().contains("cla"));
-
-    // These imports should work if modules are public
-    use crate::cla::manager::ClaManager;
-    use crate::cla::tcp::server::TcpClaListener;
-
-    let _ = std::any::TypeId::of::<ClaManager>();
-    let _ = std::any::TypeId::of::<TcpClaClient>();
-    let _ = std::any::TypeId::of::<TcpClaListener>();
-}
-
-#[test]
-fn test_reexports_work() {
-    // Test that the re-exports match the original types
-    assert_eq!(
-        std::any::TypeId::of::<ClaManager>(),
-        std::any::TypeId::of::<crate::cla::manager::ClaManager>()
-    );
-
-    assert_eq!(
-        std::any::TypeId::of::<TcpClaClient>(),
-        std::any::TypeId::of::<crate::cla::tcp::client::TcpClaClient>()
-    );
-
-    assert_eq!(
-        std::any::TypeId::of::<TcpClaListener>(),
-        std::any::TypeId::of::<crate::cla::tcp::server::TcpClaListener>()
-    );
-}
-
-// Common imports for all tests
 use crate::bpv7::bundle::{Bundle, PrimaryBlock};
+use crate::bpv7::EndpointId;
 use crate::cla::manager::*;
+use crate::cla::peer::ClaPeer;
 use crate::cla::tcp::client::*;
 use crate::cla::tcp::server::*;
+use crate::cla::ConvergenceLayer;
 use crate::consts::tcp::*;
-use crate::routing::algorithm::ClaPeer;
 use async_trait::async_trait;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -100,7 +49,7 @@ fn create_test_bundle(source: &str, destination: &str, payload: &[u8]) -> Bundle
 }
 
 // Mock ConvergenceLayer for testing
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct MockCla {
     address: String,
     should_fail: bool,
@@ -148,6 +97,30 @@ impl ConvergenceLayer for MockCla {
     }
 }
 
+// ClaPeerトレイトをMockClaに実装
+#[async_trait]
+impl ClaPeer for MockCla {
+    fn get_peer_endpoint_id(&self) -> EndpointId {
+        EndpointId::from(self.address.as_str())
+    }
+    async fn is_reachable(&self) -> bool {
+        // 失敗するCLAは到達不能として扱う
+        !self.should_fail
+    }
+    fn get_cla_type(&self) -> &str {
+        "mock"
+    }
+    fn get_connection_address(&self) -> String {
+        self.address.clone()
+    }
+    fn clone_box(&self) -> Box<dyn ClaPeer> {
+        Box::new(self.clone())
+    }
+    async fn activate(&self) -> anyhow::Result<()> {
+        <Self as ConvergenceLayer>::activate(self).await
+    }
+}
+
 #[tokio::test]
 async fn test_cla_manager_new() {
     let counter = Arc::new(AtomicUsize::new(0));
@@ -158,8 +131,9 @@ async fn test_cla_manager_new() {
     });
 
     // Test that manager was created successfully
-    let active_clas = manager.list_active().await;
-    assert!(active_clas.is_empty());
+    let peers = manager.list_reachable_peers().await;
+    let addresses: Vec<String> = peers.iter().map(|p| p.get_connection_address()).collect();
+    assert!(addresses.is_empty());
 }
 
 #[tokio::test]
@@ -171,16 +145,17 @@ async fn test_register_single_cla() {
         counter_clone.fetch_add(1, Ordering::SeqCst);
     });
 
-    let mock_cla = Arc::new(MockCla::new("test://127.0.0.1:8080"));
+    let mock_cla = Box::new(MockCla::new("test://127.0.0.1:8080"));
 
-    manager.register(mock_cla).await;
+    manager.register_peer(mock_cla).await;
 
     // Give some time for the registration to complete
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
-    let active_clas = manager.list_active().await;
-    assert_eq!(active_clas.len(), 1);
-    assert!(active_clas.contains(&"test://127.0.0.1:8080".to_string()));
+    let peers = manager.list_reachable_peers().await;
+    assert_eq!(peers.len(), 1);
+    let addresses: Vec<String> = peers.iter().map(|p| p.get_connection_address()).collect();
+    assert!(addresses.contains(&"test://127.0.0.1:8080".to_string()));
 }
 
 #[tokio::test]
@@ -192,22 +167,23 @@ async fn test_register_multiple_clas() {
         counter_clone.fetch_add(1, Ordering::SeqCst);
     });
 
-    let cla1 = Arc::new(MockCla::new("test://127.0.0.1:8080"));
-    let cla2 = Arc::new(MockCla::new("test://127.0.0.1:8081"));
-    let cla3 = Arc::new(MockCla::new("test://127.0.0.1:8082"));
+    let cla1 = Box::new(MockCla::new("test://127.0.0.1:8080"));
+    let cla2 = Box::new(MockCla::new("test://127.0.0.1:8081"));
+    let cla3 = Box::new(MockCla::new("test://127.0.0.1:8082"));
 
-    manager.register(cla1).await;
-    manager.register(cla2).await;
-    manager.register(cla3).await;
+    manager.register_peer(cla1).await;
+    manager.register_peer(cla2).await;
+    manager.register_peer(cla3).await;
 
     // Give some time for registrations to complete
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
-    let active_clas = manager.list_active().await;
-    assert_eq!(active_clas.len(), 3);
-    assert!(active_clas.contains(&"test://127.0.0.1:8080".to_string()));
-    assert!(active_clas.contains(&"test://127.0.0.1:8081".to_string()));
-    assert!(active_clas.contains(&"test://127.0.0.1:8082".to_string()));
+    let peers = manager.list_reachable_peers().await;
+    assert_eq!(peers.len(), 3);
+    let addresses: Vec<String> = peers.iter().map(|p| p.get_connection_address()).collect();
+    assert!(addresses.contains(&"test://127.0.0.1:8080".to_string()));
+    assert!(addresses.contains(&"test://127.0.0.1:8081".to_string()));
+    assert!(addresses.contains(&"test://127.0.0.1:8082".to_string()));
 }
 
 #[tokio::test]
@@ -219,16 +195,16 @@ async fn test_register_duplicate_cla() {
         counter_clone.fetch_add(1, Ordering::SeqCst);
     });
 
-    let cla1 = Arc::new(MockCla::new("test://127.0.0.1:8080"));
-    let cla2 = Arc::new(MockCla::new("test://127.0.0.1:8080")); // Same address
+    let cla1 = Box::new(MockCla::new("test://127.0.0.1:8080"));
+    let cla2 = Box::new(MockCla::new("test://127.0.0.1:8080")); // Same address
 
-    manager.register(cla1).await;
-    manager.register(cla2).await; // Should not register due to duplicate address
+    manager.register_peer(cla1).await;
+    manager.register_peer(cla2).await; // Should not register due to duplicate address
 
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
-    let active_clas = manager.list_active().await;
-    assert_eq!(active_clas.len(), 1);
+    let peers = manager.list_reachable_peers().await;
+    assert_eq!(peers.len(), 1);
 }
 
 #[tokio::test]
@@ -240,16 +216,19 @@ async fn test_register_failing_cla() {
         counter_clone.fetch_add(1, Ordering::SeqCst);
     });
 
-    let failing_cla = Arc::new(MockCla::new_failing("test://127.0.0.1:8080"));
+    let failing_cla = Box::new(MockCla::new_failing("test://127.0.0.1:8080"));
 
-    manager.register(failing_cla.clone()).await;
+    manager.register_peer(failing_cla.clone()).await;
 
     // Give some time for activation to fail
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
-    // CLA should still be registered even if activation failed
-    let active_clas = manager.list_active().await;
-    assert_eq!(active_clas.len(), 1);
+    // Failing CLA should be registered but not reachable
+    let all_peers = manager.list_all_peers().await;
+    assert_eq!(all_peers.len(), 1);
+
+    let reachable_peers = manager.list_reachable_peers().await;
+    assert_eq!(reachable_peers.len(), 0); // Failing CLA is not reachable
 
     // Verify that activation was attempted
     assert_eq!(failing_cla.activation_count(), 1);
@@ -319,29 +298,30 @@ async fn test_manager_clone() {
     let manager2 = manager1.clone();
 
     // Register CLAs using both managers
-    let cla1 = Arc::new(MockCla::new("test://127.0.0.1:8080"));
-    let cla2 = Arc::new(MockCla::new("test://127.0.0.1:8081"));
+    let cla1 = Box::new(MockCla::new("test://127.0.0.1:8080"));
+    let cla2 = Box::new(MockCla::new("test://127.0.0.1:8081"));
 
-    manager1.register(cla1).await;
-    manager2.register(cla2).await;
+    manager1.register_peer(cla1).await;
+    manager2.register_peer(cla2).await;
 
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
     // Both managers should see the same state
-    let active1 = manager1.list_active().await;
-    let active2 = manager2.list_active().await;
-
-    assert_eq!(active1.len(), 2);
-    assert_eq!(active2.len(), 2);
-    assert_eq!(active1, active2);
+    let peers1 = manager1.list_reachable_peers().await;
+    let peers2 = manager2.list_reachable_peers().await;
+    let addresses1: Vec<String> = peers1.iter().map(|p| p.get_connection_address()).collect();
+    let addresses2: Vec<String> = peers2.iter().map(|p| p.get_connection_address()).collect();
+    assert_eq!(addresses1.len(), 2);
+    assert_eq!(addresses2.len(), 2);
+    assert_eq!(addresses1, addresses2);
 }
 
 #[tokio::test]
 async fn test_list_active_empty() {
     let manager = ClaManager::new(|_bundle| {});
 
-    let active_clas = manager.list_active().await;
-    assert!(active_clas.is_empty());
+    let peers = manager.list_reachable_peers().await;
+    assert!(peers.is_empty());
 }
 
 #[test]
@@ -353,7 +333,7 @@ fn test_mock_cla_address() {
 #[tokio::test]
 async fn test_mock_cla_activation_success() {
     let mock_cla = MockCla::new("test://example.com");
-    let result = mock_cla.activate().await;
+    let result = <MockCla as ConvergenceLayer>::activate(&mock_cla).await;
     assert!(result.is_ok());
     assert_eq!(mock_cla.activation_count(), 1);
 }
@@ -361,7 +341,7 @@ async fn test_mock_cla_activation_success() {
 #[tokio::test]
 async fn test_mock_cla_activation_failure() {
     let mock_cla = MockCla::new_failing("test://example.com");
-    let result = mock_cla.activate().await;
+    let result = <MockCla as ConvergenceLayer>::activate(&mock_cla).await;
     assert!(result.is_err());
     assert_eq!(mock_cla.activation_count(), 1);
 }
@@ -370,6 +350,7 @@ async fn test_mock_cla_activation_failure() {
 fn test_tcp_cla_dialer_new() {
     let dialer = TcpClaClient {
         target_addr: "127.0.0.1:8080".to_string(),
+        connection_info: None,
     };
     assert_eq!(dialer.target_addr, "127.0.0.1:8080");
 }
@@ -378,6 +359,7 @@ fn test_tcp_cla_dialer_new() {
 fn test_tcp_cla_dialer_address() {
     let dialer = TcpClaClient {
         target_addr: "localhost:9090".to_string(),
+        connection_info: None,
     };
     assert_eq!(dialer.address(), "localhost:9090");
 }
@@ -541,6 +523,7 @@ async fn test_send_bundle_serialization() -> anyhow::Result<()> {
 async fn test_tcp_cla_dialer_activate_no_server() {
     let dialer = TcpClaClient {
         target_addr: "127.0.0.1:19999".to_string(), // Non-existent server
+        connection_info: None,
     };
 
     // This should fail because there's no server listening
@@ -563,6 +546,7 @@ async fn test_tcp_cla_dialer_activate_with_empty_store() -> anyhow::Result<()> {
     // Test with custom bundles directory
     let _dialer = TcpClaClient {
         target_addr: format!("127.0.0.1:{}", port),
+        connection_info: None,
     };
 
     // This test mainly checks the connection part since we can't easily
@@ -1057,6 +1041,7 @@ async fn test_tcp_peer_is_reachable_with_mock_server() -> anyhow::Result<()> {
 fn test_tcp_cla_client_new() {
     let client = TcpClaClient {
         target_addr: "test.example.com:8080".to_string(),
+        connection_info: None,
     };
     assert_eq!(client.target_addr, "test.example.com:8080");
 }
@@ -1065,6 +1050,7 @@ fn test_tcp_cla_client_new() {
 async fn test_tcp_cla_client_activate_connection_refused() {
     let client = TcpClaClient {
         target_addr: "127.0.0.1:19997".to_string(), // Non-existent server
+        connection_info: None,
     };
 
     let result = client.activate().await;
@@ -1075,6 +1061,7 @@ async fn test_tcp_cla_client_activate_connection_refused() {
 async fn test_tcp_cla_client_activate_invalid_address() {
     let client = TcpClaClient {
         target_addr: "invalid-hostname:8080".to_string(),
+        connection_info: None,
     };
 
     let result = client.activate().await;

@@ -313,7 +313,7 @@ async fn api_test_select_peers_for_forwarding() -> anyhow::Result<()> {
     let bundle = node.show_bundle(bundle_id)?;
 
     let peers = node.select_peers_for_forwarding(&bundle).await?;
-    assert_eq!(peers.len(), 2); // Should return the dummy peers
+    assert_eq!(peers.len(), 0); // No peers registered in this test environment
     Ok(())
 }
 

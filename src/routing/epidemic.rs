@@ -1,4 +1,5 @@
-use crate::routing::algorithm::{ClaPeer, RouteEntry, RoutingAlgorithm, RoutingTable};
+use crate::cla::peer::ClaPeer;
+use crate::routing::algorithm::{RouteEntry, RoutingAlgorithm, RoutingTable};
 use crate::store::bundle_descriptor::BundleDescriptor;
 use async_trait::async_trait;
 use std::collections::HashSet;

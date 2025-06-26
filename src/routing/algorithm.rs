@@ -1,23 +1,8 @@
 use crate::bpv7::EndpointId;
+use crate::cla::peer::ClaPeer;
 use crate::store::bundle_descriptor::BundleDescriptor;
 use async_trait::async_trait;
 use std::collections::HashMap;
-
-#[async_trait]
-pub trait ClaPeer: Send + Sync {
-    fn get_peer_endpoint_id(&self) -> EndpointId;
-
-    /// Check if this peer is currently reachable/connectable
-    /// This method should be implemented by each CLA type to perform
-    /// appropriate connectivity checks (TCP ping, BLE scan, etc.)
-    async fn is_reachable(&self) -> bool;
-
-    /// Get the CLA type for this peer (e.g., "tcp", "ble", "udp")
-    fn get_cla_type(&self) -> &str;
-
-    /// Get the connection address/identifier for this peer
-    fn get_connection_address(&self) -> String;
-}
 
 /// Represents a route entry in the routing table
 #[derive(Debug, Clone)]

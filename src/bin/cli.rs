@@ -85,7 +85,7 @@ pub enum RouteCmd {
 
 // Split command handling into separate functions for better testability
 pub async fn handle_insert_command(node: &DtnNode, message: String) -> anyhow::Result<()> {
-    println!("📦 Inserting bundle: {}", message);
+    println!("📦 Inserting bundle: {message}");
     node.insert_bundle(message).await?;
     println!("✅ Bundle inserted successfully!");
     Ok(())
@@ -98,7 +98,7 @@ pub fn handle_list_command(node: &DtnNode) -> anyhow::Result<()> {
     } else {
         println!("📋 Found {} bundles:", bundles.len());
         for id in bundles {
-            println!("  {}", id);
+            println!("  {id}");
         }
     }
     Ok(())
@@ -121,7 +121,7 @@ pub fn handle_status_command(node: &DtnNode, id: Option<String>) -> anyhow::Resu
         Some(bundle_id) => {
             let bundle = node.show_bundle(&bundle_id)?;
 
-            println!("📄 Bundle Status: {}", bundle_id);
+            println!("📄 Bundle Status: {bundle_id}");
             println!("  Source: {}", bundle.primary.source);
             println!("  Destination: {}", bundle.primary.destination);
             println!("  Creation Time: {}", bundle.primary.creation_timestamp);
@@ -146,9 +146,9 @@ pub fn handle_status_command(node: &DtnNode, id: Option<String>) -> anyhow::Resu
                     total,
                 } => {
                     println!("📊 Bundle Status Summary:");
-                    println!("  ✅ Active: {}", active);
-                    println!("  ⏰ Expired: {}", expired);
-                    println!("  📦 Total: {}", total);
+                    println!("  ✅ Active: {active}");
+                    println!("  ⏰ Expired: {expired}");
+                    println!("  📦 Total: {total}");
                 }
                 _ => unreachable!(),
             }
@@ -164,7 +164,7 @@ pub fn handle_cleanup_command(node: &DtnNode) -> anyhow::Result<()> {
 
 pub async fn handle_route_test_command(node: &DtnNode, id: String) -> anyhow::Result<()> {
     let bundle = node.show_bundle(&id)?;
-    println!("🧭 Testing routing for bundle: {}", id);
+    println!("🧭 Testing routing for bundle: {id}");
     println!("  Source: {}", bundle.primary.source);
     println!("  Destination: {}", bundle.primary.destination);
 
@@ -176,7 +176,7 @@ pub async fn handle_route_test_command(node: &DtnNode, id: String) -> anyhow::Re
             }
         }
         Err(e) => {
-            eprintln!("❌ Failed to select peers: {}", e);
+            eprintln!("❌ Failed to select peers: {e}");
         }
     }
     Ok(())
@@ -191,7 +191,7 @@ pub fn handle_route_show_command() -> anyhow::Result<()> {
 }
 
 pub fn handle_route_set_command(algorithm: String) -> anyhow::Result<()> {
-    println!("🧭 Setting routing algorithm to: {}", algorithm);
+    println!("🧭 Setting routing algorithm to: {algorithm}");
     println!("⚠️  This feature requires restarting the application");
     println!("   Update config/default.toml or set DTN_ROUTING_ALGORITHM environment variable");
     Ok(())
@@ -219,7 +219,7 @@ pub fn handle_route_table_command(node: &DtnNode) -> anyhow::Result<()> {
             }
         }
         Err(e) => {
-            eprintln!("❌ Failed to get routing table: {}", e);
+            eprintln!("❌ Failed to get routing table: {e}");
         }
     }
     Ok(())
@@ -233,10 +233,10 @@ pub fn handle_route_add_command(
     cost: u32,
 ) -> anyhow::Result<()> {
     println!("🧭 Adding route to routing table:");
-    println!("  Destination: {}", destination);
-    println!("  Next hop: {}", next_hop);
-    println!("  CLA type: {}", cla_type);
-    println!("  Cost: {}", cost);
+    println!("  Destination: {destination}");
+    println!("  Next hop: {next_hop}");
+    println!("  CLA type: {cla_type}");
+    println!("  Cost: {cost}");
 
     let entry = RouteEntry {
         destination: EndpointId::from(&destination),
@@ -248,14 +248,14 @@ pub fn handle_route_add_command(
 
     match node.add_route(entry) {
         Ok(()) => println!("✅ Route added successfully!"),
-        Err(e) => eprintln!("❌ Failed to add route: {}", e),
+        Err(e) => eprintln!("❌ Failed to add route: {e}"),
     }
     Ok(())
 }
 
 pub async fn handle_route_test_table_command(node: &DtnNode, id: String) -> anyhow::Result<()> {
     let bundle = node.show_bundle(&id)?;
-    println!("🧭 Testing routing table for bundle: {}", id);
+    println!("🧭 Testing routing table for bundle: {id}");
     println!("  Source: {}", bundle.primary.source);
     println!("  Destination: {}", bundle.primary.destination);
 
@@ -275,7 +275,7 @@ pub async fn handle_route_test_table_command(node: &DtnNode, id: String) -> anyh
             }
         }
         Err(e) => {
-            eprintln!("❌ Failed to select routes: {}", e);
+            eprintln!("❌ Failed to select routes: {e}");
         }
     }
 
@@ -293,7 +293,7 @@ pub async fn handle_route_test_table_command(node: &DtnNode, id: String) -> anyh
             );
         }
         None => {
-            println!("  No route found to {}", destination);
+            println!("  No route found to {destination}");
         }
     }
     Ok(())

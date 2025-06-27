@@ -203,8 +203,8 @@ fn test_routing_algorithm_type_debug() {
     let epidemic = RoutingAlgorithmType::Epidemic;
     let prophet = RoutingAlgorithmType::Prophet;
 
-    assert_eq!(format!("{:?}", epidemic), "Epidemic");
-    assert_eq!(format!("{:?}", prophet), "Prophet");
+    assert_eq!(format!("{epidemic:?}"), "Epidemic");
+    assert_eq!(format!("{prophet:?}"), "Prophet");
 }
 
 #[test]

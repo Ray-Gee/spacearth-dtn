@@ -269,7 +269,7 @@ mod tests {
         let bundle = Bundle::new("dtn://src", "dtn://dest", b"test".to_vec());
         let descriptor = BundleDescriptor::new(bundle);
 
-        let debug_str = format!("{:?}", descriptor);
+        let debug_str = format!("{descriptor:?}");
         assert!(debug_str.contains("BundleDescriptor"));
         assert!(debug_str.contains("dtn://src"));
         assert!(debug_str.contains("dtn://dest"));

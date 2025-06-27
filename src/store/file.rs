@@ -28,7 +28,7 @@ impl BundleStore {
             payload_hash
         );
         let hash = Sha256::digest(id_str.as_bytes());
-        self.dir.join(format!("{:x}.cbor", hash))
+        self.dir.join(format!("{hash:x}.cbor"))
     }
 
     pub fn insert(&self, bundle: &Bundle) -> Result<()> {
@@ -112,11 +112,11 @@ impl BundleStore {
 
             if bundle.is_expired() {
                 let path = self.dir.join(format!("{id}.cbor"));
-                println!("🔍 Attempting to remove: {:?}", path);
+                println!("🔍 Attempting to remove: {path:?}");
                 match std::fs::remove_file(&path) {
                     Ok(_) => println!("🗑️  Removed expired bundle: {id}"),
                     Err(e) => {
-                        println!("❌ Failed to remove: {:?} - {:?}", path, e);
+                        println!("❌ Failed to remove: {path:?} - {e:?}");
                         if e.kind() != std::io::ErrorKind::NotFound {
                             return Err(e.into());
                         }

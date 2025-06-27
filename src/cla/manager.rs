@@ -43,11 +43,11 @@ impl ClaManager {
             .iter()
             .any(|p| p.get_peer_endpoint_id() == peer_id)
         {
-            println!("Peer already registered: {}", peer_id);
+            println!("Peer already registered: {peer_id}");
             return;
         }
         if let Err(e) = peer.activate().await {
-            println!("Failed to activate peer {}: {}", peer_id, e);
+            println!("Failed to activate peer {peer_id}: {e}");
         }
         state.peers.push(peer);
     }

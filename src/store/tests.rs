@@ -429,8 +429,8 @@ fn test_insert_with_different_payloads() {
         let bundle = Bundle {
             primary: PrimaryBlock {
                 version: 7,
-                source: format!("node{}", i),
-                destination: format!("dest{}", i),
+                source: format!("node{i}"),
+                destination: format!("dest{i}"),
                 report_to: "none".to_string(),
                 creation_timestamp: SystemTime::now()
                     .duration_since(UNIX_EPOCH)

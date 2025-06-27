@@ -25,8 +25,8 @@ fn run_cli(args: &[&str]) -> String {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("[CLI STDOUT]\n{}\n[CLI STDERR]\n{}", stdout, stderr);
-    format!("{}{}", stdout, stderr)
+    println!("[CLI STDOUT]\n{stdout}\n[CLI STDERR]\n{stderr}");
+    format!("{stdout}{stderr}")
 }
 
 // Helper to get a unique payload
@@ -35,7 +35,7 @@ fn get_unique_payload(base: &str) -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    format!("{}-{}", base, timestamp)
+    format!("{base}-{timestamp}")
 }
 
 // Setup and teardown for each test
@@ -62,7 +62,7 @@ fn test_show_bundle() {
     setup();
     let payload = get_unique_payload("Test message for show");
     let output = run_cli(&["insert", "--message", &payload]);
-    println!("insert output: {}", output);
+    println!("insert output: {output}");
     // Extract bundle ID from insert output
     let bundle_id = output
         .lines()
@@ -74,7 +74,7 @@ fn test_show_bundle() {
     let partial_id = &bundle_id[..8];
 
     let output = run_cli(&["show", "--id", partial_id]);
-    println!("show output: {}", output);
+    println!("show output: {output}");
     assert!(output.contains(&payload));
 }
 
@@ -92,14 +92,14 @@ fn test_bundle_status() {
                 .map(|idx| l[idx + 3..].trim().trim_end_matches(')'))
         })
         .unwrap();
-    println!("Extracted bundle_id from insert: '{}'", bundle_id);
+    println!("Extracted bundle_id from insert: '{bundle_id}'");
 
     // Use only the first 8 characters for better compatibility
     let partial_id = &bundle_id[..8];
-    println!("Using partial_id: '{}'", partial_id);
+    println!("Using partial_id: '{partial_id}'");
 
     let output = run_cli(&["status", "--id", partial_id]);
-    println!("status output: {}", output);
+    println!("status output: {output}");
     assert!(
         output.contains("ACTIVE")
             || output.contains("EXPIRED")
@@ -114,7 +114,7 @@ fn test_cleanup_expired() {
     run_cli(&["insert", "--message", &payload]);
 
     let output = run_cli(&["cleanup"]);
-    println!("cleanup output: {}", output);
+    println!("cleanup output: {output}");
     // The cleanup command should complete without error
     assert!(!output.contains("error") && !output.contains("Error"));
 }
@@ -137,7 +137,7 @@ fn test_routing_functionality() {
 
     // List routes
     let output = run_cli(&["route", "table"]);
-    println!("route table output: {}", output);
+    println!("route table output: {output}");
     // The command should complete without error, even if no routes are configured
     assert!(!output.contains("error") && !output.contains("Error"));
 }
@@ -160,7 +160,7 @@ fn test_bundle_forwarding_selection() {
     let payload = get_unique_payload("Forwarding message");
     // Insert a bundle with destination dtn://src
     let output = run_cli(&["insert", "--message", &payload]);
-    println!("insert output: {}", output);
+    println!("insert output: {output}");
 
     // Extract bundle ID from insert output instead of list output for better reliability
     let bundle_id = output
@@ -170,14 +170,14 @@ fn test_bundle_forwarding_selection() {
                 .map(|idx| l[idx + 3..].trim().trim_end_matches(')'))
         })
         .unwrap();
-    println!("Extracted bundle_id from insert: '{}'", bundle_id);
+    println!("Extracted bundle_id from insert: '{bundle_id}'");
 
     // Use only the first 8 characters for better compatibility
     let partial_id = &bundle_id[..8];
-    println!("Using partial_id for route test: '{}'", partial_id);
+    println!("Using partial_id for route test: '{partial_id}'");
 
     let output = run_cli(&["route", "test-table", "--id", partial_id]);
-    println!("route test-table output: {}", output);
+    println!("route test-table output: {output}");
     // Accept various outcomes: route found, no route found, or bundle not found
     assert!(
         output.contains("No route found")

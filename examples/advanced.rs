@@ -32,11 +32,11 @@ async fn main() -> anyhow::Result<()> {
     // Get detailed status for a specific bundle
     let bundles = node.list_bundles()?;
     if let Some(first_id) = bundles.first() {
-        println!("\n📄 Detailed status for bundle: {}", first_id);
+        println!("\n📄 Detailed status for bundle: {first_id}");
         let status = node.get_bundle_status(Some(first_id))?;
         match status {
             BundleStatus::Single { id, bundle } => {
-                println!("  ID: {}", id);
+                println!("  ID: {id}");
                 println!("  Source: {}", bundle.primary.source);
                 println!("  Destination: {}", bundle.primary.destination);
                 println!("  Creation Time: {}", bundle.primary.creation_timestamp);
@@ -73,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
                 );
             }
             Err(e) => {
-                println!("  Quick show failed: {}", e);
+                println!("  Quick show failed: {e}");
             }
         }
     }
@@ -84,7 +84,7 @@ async fn main() -> anyhow::Result<()> {
     // Try to show a non-existent bundle
     match node.show_bundle("nonexistent") {
         Ok(_) => println!("  Unexpected: Found non-existent bundle"),
-        Err(e) => println!("  Expected error for non-existent bundle: {}", e),
+        Err(e) => println!("  Expected error for non-existent bundle: {e}"),
     }
 
     // Method 4: Status summary
@@ -97,9 +97,9 @@ async fn main() -> anyhow::Result<()> {
             total,
         } => {
             println!("  📊 Bundle Summary:");
-            println!("    ✅ Active: {}", active);
-            println!("    ⏰ Expired: {}", expired);
-            println!("    📦 Total: {}", total);
+            println!("    ✅ Active: {active}");
+            println!("    ⏰ Expired: {expired}");
+            println!("    📦 Total: {total}");
 
             if expired > 0 {
                 println!("  🧹 Cleaning up expired bundles...");
@@ -114,9 +114,9 @@ async fn main() -> anyhow::Result<()> {
                 } = after_cleanup
                 {
                     println!("  📊 After cleanup:");
-                    println!("    ✅ Active: {}", new_active);
-                    println!("    ⏰ Expired: {}", new_expired);
-                    println!("    📦 Total: {}", new_total);
+                    println!("    ✅ Active: {new_active}");
+                    println!("    ⏰ Expired: {new_expired}");
+                    println!("    📦 Total: {new_total}");
                 }
             }
         }

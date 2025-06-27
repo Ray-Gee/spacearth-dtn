@@ -1,14 +1,14 @@
 #[test]
 fn test_module_path() {
     let path = module_path!();
-    println!("Actual module path: {}", path);
+    println!("Actual module path: {path}");
     assert!(path.contains("cla::tests"));
 }
 
 #[test]
 fn test_current_module() {
     let current_module = module_path!();
-    println!("Current module path: {}", current_module);
+    println!("Current module path: {current_module}");
     assert!(current_module.contains("cla::tests"));
 }
 
@@ -272,8 +272,8 @@ async fn test_notify_receive_multiple_bundles() {
     // Send multiple bundles
     for i in 0..5 {
         let bundle = create_test_bundle(
-            &format!("dtn://source{}", i),
-            &format!("dtn://dest{}", i),
+            &format!("dtn://source{i}"),
+            &format!("dtn://dest{i}"),
             b"test payload",
         );
         manager.notify_receive(bundle);
@@ -388,8 +388,8 @@ fn test_create_bundle_with_various_payloads() {
 
     for (name, payload) in test_cases {
         let bundle = create_bundle(
-            &format!("dtn://source_{}", name),
-            &format!("dtn://dest_{}", name),
+            &format!("dtn://source_{name}"),
+            &format!("dtn://dest_{name}"),
             payload.clone(),
         );
 
@@ -447,7 +447,7 @@ async fn mock_tcp_server(
 async fn test_send_bundle_success() -> anyhow::Result<()> {
     let (port, _handle) = mock_tcp_server(OK).await?;
 
-    let mut stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
+    let mut stream = TcpStream::connect(format!("127.0.0.1:{port}")).await?;
     let bundle = create_test_bundle("dtn://source", "dtn://dest", b"test payload");
 
     let result = send_bundle(&mut stream, &bundle).await;
@@ -463,15 +463,15 @@ async fn test_send_bundle_with_different_acks() -> anyhow::Result<()> {
     for (i, ack) in test_cases.iter().enumerate() {
         let (port, _handle) = mock_tcp_server(ack).await?;
 
-        let mut stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
+        let mut stream = TcpStream::connect(format!("127.0.0.1:{port}")).await?;
         let bundle = create_test_bundle(
-            &format!("dtn://source_{}", i),
-            &format!("dtn://dest_{}", i),
-            format!("test payload {}", i).as_bytes(),
+            &format!("dtn://source_{i}"),
+            &format!("dtn://dest_{i}"),
+            format!("test payload {i}").as_bytes(),
         );
 
         let result = send_bundle(&mut stream, &bundle).await;
-        assert!(result.is_ok(), "Failed for ACK: {}", ack);
+        assert!(result.is_ok(), "Failed for ACK: {ack}");
     }
 
     Ok(())
@@ -481,7 +481,7 @@ async fn test_send_bundle_with_different_acks() -> anyhow::Result<()> {
 async fn test_send_bundle_large_payload() -> anyhow::Result<()> {
     let (port, _handle) = mock_tcp_server(OK).await?;
 
-    let mut stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
+    let mut stream = TcpStream::connect(format!("127.0.0.1:{port}")).await?;
 
     // Create a large payload
     let large_payload = vec![42u8; 10000];
@@ -545,7 +545,7 @@ async fn test_tcp_cla_dialer_activate_with_empty_store() -> anyhow::Result<()> {
 
     // Test with custom bundles directory
     let _dialer = TcpClaClient {
-        target_addr: format!("127.0.0.1:{}", port),
+        target_addr: format!("127.0.0.1:{port}"),
         connection_info: None,
     };
 
@@ -577,9 +577,9 @@ fn test_create_bundle_consistency() {
     // Create multiple bundles and ensure they have consistent structure
     for i in 0..10 {
         let bundle = create_bundle(
-            &format!("dtn://source{}", i),
-            &format!("dtn://dest{}", i),
-            format!("payload{}", i).into_bytes(),
+            &format!("dtn://source{i}"),
+            &format!("dtn://dest{i}"),
+            format!("payload{i}").into_bytes(),
         );
 
         assert_eq!(bundle.primary.version, 7);
@@ -699,9 +699,9 @@ async fn test_handle_connection_multiple_bundles() -> anyhow::Result<()> {
     // Send multiple bundles
     for i in 0..3 {
         let bundle = create_test_bundle(
-            &format!("dtn://source{}", i),
-            &format!("dtn://dest{}", i),
-            format!("payload {}", i).as_bytes(),
+            &format!("dtn://source{i}"),
+            &format!("dtn://dest{i}"),
+            format!("payload {i}").as_bytes(),
         );
 
         let encoded = serde_cbor::to_vec(&bundle)?;
@@ -1025,7 +1025,7 @@ async fn test_tcp_peer_is_reachable_with_mock_server() -> anyhow::Result<()> {
     });
 
     let eid = crate::bpv7::EndpointId::from("dtn://reachable");
-    let peer = crate::cla::TcpPeer::new(eid, format!("127.0.0.1:{}", port));
+    let peer = crate::cla::TcpPeer::new(eid, format!("127.0.0.1:{port}"));
 
     // Give server time to start
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;

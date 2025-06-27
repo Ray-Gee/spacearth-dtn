@@ -26,12 +26,12 @@ impl ConvergenceLayer for TcpClaListener {
 
         loop {
             let (stream, addr) = listener.accept().await?;
-            println!("📨 New connection from: {}", addr);
+            println!("📨 New connection from: {addr}");
 
             let callback = Arc::clone(&self.receive_callback);
             tokio::spawn(async move {
                 if let Err(e) = handle_connection(stream, callback).await {
-                    eprintln!("❌ Error handling connection: {}", e);
+                    eprintln!("❌ Error handling connection: {e}");
                 }
             });
         }
@@ -73,7 +73,7 @@ where
                 let _ = stream.write_all(b"OK").await;
             }
             Err(e) => {
-                eprintln!("❌ Failed to deserialize bundle: {}", e);
+                eprintln!("❌ Failed to deserialize bundle: {e}");
                 let _ = stream.write_all(b"ERROR").await;
             }
         }

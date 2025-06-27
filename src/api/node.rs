@@ -256,7 +256,7 @@ impl DtnNode {
 
         // CLAマネージャにピア登録（必要なら）
         let manager = ClaManager::new(|bundle| {
-            println!("📥 Received: {:?}", bundle);
+            println!("📥 Received: {bundle:?}");
         });
         let peer: Box<dyn ClaPeer> =
             Box::new(TcpPeer::new(EndpointId::from("dtn://listener"), bind_addr));
@@ -271,7 +271,7 @@ impl DtnNode {
     /// Start a TCP dialer daemon
     pub async fn start_tcp_dialer(&self, target_addr: String) -> anyhow::Result<()> {
         let manager = ClaManager::new(|bundle| {
-            println!("📤 Should not receive here (Dialer): {:?}", bundle);
+            println!("📤 Should not receive here (Dialer): {bundle:?}");
         });
 
         let peer: Box<dyn ClaPeer> =

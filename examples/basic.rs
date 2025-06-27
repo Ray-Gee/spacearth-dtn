@@ -15,12 +15,12 @@ async fn main() -> anyhow::Result<()> {
     let bundles = node.list_bundles()?;
     println!("Found {} bundles:", bundles.len());
     for id in &bundles {
-        println!("  {}", id);
+        println!("  {id}");
     }
 
     // Show details of a specific bundle
     if let Some(first_id) = bundles.first() {
-        println!("📄 Showing details for bundle: {}", first_id);
+        println!("📄 Showing details for bundle: {first_id}");
         let bundle = node.show_bundle(first_id)?;
         println!("  Source: {}", bundle.primary.source);
         println!("  Destination: {}", bundle.primary.destination);
@@ -37,9 +37,9 @@ async fn main() -> anyhow::Result<()> {
             expired,
             total,
         } => {
-            println!("  Active bundles: {}", active);
-            println!("  Expired bundles: {}", expired);
-            println!("  Total bundles: {}", total);
+            println!("  Active bundles: {active}");
+            println!("  Expired bundles: {expired}");
+            println!("  Total bundles: {total}");
         }
         _ => unreachable!(),
     }

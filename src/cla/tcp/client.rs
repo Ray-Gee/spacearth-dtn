@@ -45,17 +45,17 @@ impl TcpConnectionInfo {
         println!("🌐 TCP Connection Info:");
         println!("   Address: {}:{}", self.address, self.port);
         if let Some(latency) = self.latency {
-            println!("   Latency: {:?}", latency);
+            println!("   Latency: {latency:?}");
         }
         if let Some(conn_time) = self.connection_time {
-            println!("   Connection Time: {:?}", conn_time);
+            println!("   Connection Time: {conn_time:?}");
         }
         println!("   Reachable: {}", self.is_reachable);
         if let Some(local) = &self.local_addr {
-            println!("   Local Address: {}", local);
+            println!("   Local Address: {local}");
         }
         if let Some(remote) = &self.remote_addr {
-            println!("   Remote Address: {}", remote);
+            println!("   Remote Address: {remote}");
         }
         println!();
     }
@@ -165,7 +165,7 @@ impl ClaPeer for TcpPeer {
 async fn tcp_connect_and_collect_info(address: &str) -> anyhow::Result<Option<TcpConnectionInfo>> {
     let mut connection_info = TcpConnectionInfo::new(address.to_string());
 
-    println!("🔍 Attempting TCP connection to: {}", address);
+    println!("🔍 Attempting TCP connection to: {address}");
 
     let start_time = Instant::now();
 
@@ -189,16 +189,16 @@ async fn tcp_connect_and_collect_info(address: &str) -> anyhow::Result<Option<Tc
             // For now, we'll just use the connection time as a rough latency indicator
             connection_info.latency = Some(ping_start.elapsed());
 
-            println!("✅ TCP connection successful to: {}", address);
+            println!("✅ TCP connection successful to: {address}");
             Ok(Some(connection_info))
         }
         Ok(Err(e)) => {
-            println!("❌ TCP connection failed to {}: {}", address, e);
+            println!("❌ TCP connection failed to {address}: {e}");
             connection_info.is_reachable = false;
             Ok(Some(connection_info))
         }
         Err(_) => {
-            println!("❌ TCP connection timeout to: {}", address);
+            println!("❌ TCP connection timeout to: {address}");
             connection_info.is_reachable = false;
             Ok(Some(connection_info))
         }
@@ -257,10 +257,7 @@ impl ConvergenceLayer for TcpClaClient {
 
         for id in store.list()? {
             let bundle = store.load_by_partial_id(&id)?;
-            println!(
-                "📨 Sending bundle: {id} bundle: {:?} stream: {:?}",
-                bundle, stream
-            );
+            println!("📨 Sending bundle: {id} bundle: {bundle:?} stream: {stream:?}");
             if send_bundle(&mut stream, &bundle).await.is_ok() {
                 store.dispatch_one(&bundle, dispatched_dir)?;
             } else {

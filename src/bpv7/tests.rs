@@ -100,7 +100,7 @@ fn test_bundle_clone() {
 #[test]
 fn test_bundle_debug() {
     let bundle = Bundle::new("src://test", "dst://test", vec![1, 2, 3]);
-    let debug_str = format!("{:?}", bundle);
+    let debug_str = format!("{bundle:?}");
 
     assert!(debug_str.contains("Bundle"));
     assert!(debug_str.contains("PrimaryBlock"));
@@ -171,7 +171,7 @@ fn test_null_endpoint() {
 #[test]
 fn test_display() {
     let eid = EndpointId::from("dtn://test");
-    assert_eq!(format!("{}", eid), "dtn://test");
+    assert_eq!(format!("{eid}"), "dtn://test");
 }
 
 #[test]

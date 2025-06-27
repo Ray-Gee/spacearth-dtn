@@ -59,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
     let bundles = node.list_bundles()?;
     if let Some(id) = bundles.first() {
         let bundle = node.show_bundle(id)?;
-        println!("  Testing routing for bundle: {}", id);
+        println!("  Testing routing for bundle: {id}");
         println!("  Destination: {}", bundle.primary.destination);
 
         // Test the new routing method using routing table
@@ -78,7 +78,7 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
             Err(e) => {
-                eprintln!("  ❌ Failed to select routes: {}", e);
+                eprintln!("  ❌ Failed to select routes: {e}");
             }
         }
 
@@ -96,7 +96,7 @@ async fn main() -> anyhow::Result<()> {
                 );
             }
             None => {
-                println!("  No route found to {}", destination);
+                println!("  No route found to {destination}");
             }
         }
     }
@@ -132,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
     let bundles = custom_node.list_bundles()?;
     if let Some(id) = bundles.first() {
         let bundle = custom_node.show_bundle(id)?;
-        println!("  Testing Prophet routing for bundle: {}", id);
+        println!("  Testing Prophet routing for bundle: {id}");
 
         match custom_node.select_routes_for_forwarding(&bundle).await {
             Ok(routes) => {
@@ -149,7 +149,7 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
             Err(e) => {
-                eprintln!("  ❌ Failed to select routes: {}", e);
+                eprintln!("  ❌ Failed to select routes: {e}");
             }
         }
     }

@@ -46,10 +46,10 @@ impl BleConnectionInfo {
         println!("   Name: {}", self.device_name);
         println!("   MAC Address: {}", self.mac_address);
         if let Some(rssi) = self.rssi {
-            println!("   RSSI: {} dBm", rssi);
+            println!("   RSSI: {rssi} dBm");
         }
         if let Some(tx_power) = self.tx_power {
-            println!("   TX Power: {} dBm", tx_power);
+            println!("   TX Power: {tx_power} dBm");
         }
         println!("   Connectable: {}", self.is_connectable);
         if !self.services.is_empty() {
@@ -88,7 +88,7 @@ async fn ble_discover_device(device_name: &str) -> anyhow::Result<Option<BleConn
         .next()
         .ok_or_else(|| anyhow::anyhow!("No BLE adapter found"))?;
 
-    println!("🔍 Scanning for BLE device: {}", device_name);
+    println!("🔍 Scanning for BLE device: {device_name}");
     adapter.start_scan(Default::default()).await?;
     time::sleep(Duration::from_secs(2)).await;
 

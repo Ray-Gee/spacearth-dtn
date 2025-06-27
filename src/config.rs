@@ -54,8 +54,8 @@ impl Config {
             // "sprayandwait" => RoutingAlgorithmType::SprayAndWait,
             _ => {
                 eprintln!(
-                    "Warning: Unknown routing algorithm '{}', falling back to epidemic",
-                    self.routing.algorithm
+                    "Warning: Unknown routing algorithm '{alg}', falling back to epidemic",
+                    alg = self.routing.algorithm
                 );
                 RoutingAlgorithmType::Epidemic
             }
@@ -221,7 +221,7 @@ mod tests {
             lifetime: 3600,
         };
 
-        let debug_str = format!("{:?}", bundle_config);
+        let debug_str = format!("{bundle_config:?}");
         assert!(debug_str.contains("BundleConfig"));
         assert!(debug_str.contains("7"));
         assert!(debug_str.contains("3600"));
@@ -235,7 +235,7 @@ mod tests {
             report_to: "dtn://report".to_string(),
         };
 
-        let debug_str = format!("{:?}", endpoints_config);
+        let debug_str = format!("{endpoints_config:?}");
         assert!(debug_str.contains("EndpointsConfig"));
         assert!(debug_str.contains("dtn://dest"));
         assert!(debug_str.contains("dtn://src"));
@@ -249,7 +249,7 @@ mod tests {
             max_size: 2048,
         };
 
-        let debug_str = format!("{:?}", storage_config);
+        let debug_str = format!("{storage_config:?}");
         assert!(debug_str.contains("StorageConfig"));
         assert!(debug_str.contains("test_bundles"));
         assert!(debug_str.contains("2048"));
@@ -261,7 +261,7 @@ mod tests {
             algorithm: "epidemic".to_string(),
         };
 
-        let debug_str = format!("{:?}", routing_config);
+        let debug_str = format!("{routing_config:?}");
         assert!(debug_str.contains("RoutingConfig"));
         assert!(debug_str.contains("epidemic"));
     }
@@ -269,7 +269,7 @@ mod tests {
     #[test]
     fn test_config_debug() {
         let config = Config::test_config();
-        let debug_str = format!("{:?}", config);
+        let debug_str = format!("{config:?}");
         assert!(debug_str.contains("Config"));
         assert!(debug_str.contains("bundle"));
         assert!(debug_str.contains("endpoints"));

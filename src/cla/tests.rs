@@ -1094,3 +1094,92 @@ fn test_create_bundle_unicode_addresses() {
     assert_eq!(bundle.primary.source, "dtn://テスト送信");
     assert_eq!(bundle.primary.destination, "dtn://テスト受信");
 }
+
+// =====================
+// BLE Client Unit Tests
+// =====================
+#[cfg(test)]
+mod ble_client_tests {
+    use super::*;
+    use crate::cla::ble::client::*;
+
+    #[test]
+    fn test_ble_connection_info_new_and_display() {
+        let info = BleConnectionInfo::new("dev1".to_string(), "AA:BB:CC:DD:EE:FF".to_string());
+        assert_eq!(info.device_name, "dev1");
+        assert_eq!(info.mac_address, "AA:BB:CC:DD:EE:FF");
+        info.display_info(); // just call for coverage
+    }
+
+    #[test]
+    fn test_ble_peer_new_and_methods() {
+        let peer_id = EndpointId::from("dtn://ble-peer");
+        let peer = BlePeer::new(peer_id.clone(), "dev1".to_string());
+        assert_eq!(peer.peer_id, peer_id);
+        assert_eq!(peer.device_name, "dev1");
+        assert!(peer.get_connection_info().is_none());
+    }
+
+    #[test]
+    fn test_ble_peer_with_connection_info() {
+        let peer_id = EndpointId::from("dtn://ble-peer");
+        let info = BleConnectionInfo::new("dev1".to_string(), "AA:BB:CC:DD:EE:FF".to_string());
+        let peer = BlePeer::new(peer_id, "dev1".to_string()).with_connection_info(info.clone());
+        assert!(peer.get_connection_info().is_some());
+    }
+
+    #[test]
+    fn test_ble_cla_client_new_and_methods() {
+        let client = BleClaClient::new("dev1".to_string());
+        assert_eq!(client.device_name, "dev1");
+        assert!(client.get_connection_info().is_none());
+        client.display_stored_info(); // just call for coverage
+    }
+
+    #[tokio::test]
+    async fn test_ble_peer_trait_methods() {
+        let peer_id = EndpointId::from("dtn://ble-peer");
+        let peer = BlePeer::new(peer_id, "dev1".to_string());
+        let _ = peer.address();
+        let _ = peer.get_peer_endpoint_id();
+        let _ = peer.get_cla_type();
+        let _ = peer.get_connection_address();
+        // activate/is_reachableは実機依存なのでエラーでもOK
+        let _ = peer.is_reachable().await;
+    }
+}
+
+// =====================
+// TCP Client Unit Tests
+// =====================
+#[cfg(test)]
+mod tcp_client_tests {
+    use super::*;
+
+    #[test]
+    fn test_tcp_connection_info_new_and_display() {
+        let info = TcpConnectionInfo::new("127.0.0.1:1234".to_string());
+        assert_eq!(info.address, "127.0.0.1:1234");
+        info.display_info(); // just call for coverage
+    }
+
+    #[test]
+    fn test_tcp_cla_client_new_and_methods() {
+        let client = TcpClaClient::new("127.0.0.1:1234".to_string());
+        assert_eq!(client.target_addr, "127.0.0.1:1234");
+        assert!(client.get_connection_info().is_none());
+        client.display_stored_info(); // just call for coverage
+    }
+
+    #[tokio::test]
+    async fn test_tcp_peer_trait_methods() {
+        let peer_id = EndpointId::from("dtn://tcp-peer");
+        let peer = TcpPeer::new(peer_id, "127.0.0.1:1234".to_string());
+        let _ = peer.address();
+        let _ = peer.get_peer_endpoint_id();
+        let _ = peer.get_cla_type();
+        let _ = peer.get_connection_address();
+        // activate/is_reachableは実ネット依存なのでエラーでもOK
+        let _ = peer.is_reachable().await;
+    }
+}
